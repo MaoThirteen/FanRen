@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>修仙酒馆</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/style.css">
+<script>
+// 中文引号高亮
+document.addEventListener('DOMContentLoaded',function(){
+  const mo=new MutationObserver(()=>{
+    document.querySelectorAll('#chatArea .text-sm').forEach(el=>{
+      let h=el.innerHTML;
+      h=h.replace(/“([^”]*)”/g,'<span style="color:#e8c860;font-weight:500;">"$1"</span>');
+      if(h!==el.innerHTML)el.innerHTML=h;
+    });
+  });
+  mo.observe(document.getElementById('chatArea'),{childList:true,subtree:true});
+});
+</script>
+</head>
+<body class="bg-[#0a0a14] text-[#d4d4dc] min-h-screen flex flex-col font-['PingFang_SC','Microsoft_YaHei','sans-serif']">
+
+<!-- ===== 顶部导航栏 ===== -->
+<header class="fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 bg-[rgba(10,10,20,.88)] backdrop-blur border-b border-[rgba(100,90,180,.06)]">
+  <button id="menuBtn" class="p-2 rounded-lg hover:bg-[rgba(100,90,180,.1)] transition text-[rgba(180,180,220,.5)] text-lg">☰</button>
+  <div class="flex-1"></div>
+  <button id="paramBtn" class="p-2 rounded-lg hover:bg-[rgba(200,80,80,.06)] transition text-[rgba(200,140,140,.4)]" title="对话参数">❤️</button>
+  <button id="logBtn" class="p-2 rounded-lg hover:bg-[rgba(100,90,180,.1)] transition text-[rgba(180,180,220,.35)] text-sm" title="运行日志">📝</button>
+  <button id="summaryBtn" class="p-2 rounded-lg hover:bg-[rgba(100,90,180,.1)] transition text-[rgba(180,180,220,.35)] text-sm">📋</button>
+  <button id="exportImportBtn" class="p-2 rounded-lg hover:bg-[rgba(100,90,180,.1)] transition text-[rgba(180,180,220,.35)] text-sm">💾</button>
+  <button id="settingsBtn" class="p-2 rounded-lg hover:bg-[rgba(100,90,180,.1)] transition text-[rgba(180,180,220,.4)] text-lg">⚙</button>
+</header>
+
+<!-- ===== 聊天区 ===== -->
+<main id="chatArea" class="flex-1 overflow-y-auto pt-14 pb-20 px-4 md:px-8 space-y-4 max-w-4xl mx-auto w-full">
+  <div class="text-center text-[rgba(180,180,220,.2)] text-sm tracking-[2px] pt-8 select-none">— 故事从这里开始 —</div>
+</main>
+
+<!-- ===== 底部输入区 ===== -->
+<div class="fixed bottom-0 left-0 right-0 z-30 bg-[rgba(10,10,20,.88)] backdrop-blur border-t border-[rgba(100,90,180,.06)]">
+  <div id="extraPanel" class="max-h-0 overflow-hidden transition-all duration-300 bg-[rgba(14,14,30,.6)] border-b border-[rgba(100,90,180,.05)]">
+    <div class="max-w-4xl mx-auto p-3 text-center text-[10px] text-[rgba(180,180,220,.15)]">（扩展面板占位）</div>
+  </div>
+  <div class="max-w-4xl mx-auto flex gap-2 p-2">
+    <textarea id="inputBox" rows="1" class="flex-1 resize-none rounded-lg px-3 py-2 bg-[rgba(15,15,35,.7)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] text-sm placeholder:text-[rgba(180,180,220,.12)] outline-none focus:border-[rgba(120,110,220,.3)] transition leading-relaxed" placeholder="输入你的行动…"></textarea>
+    <button id="sendBtn" class="w-12 rounded-lg bg-gradient-to-br from-[rgba(74,122,255,.2)] to-[rgba(120,80,220,.2)] border border-[rgba(100,90,200,.22)] text-[#b8b8e8] font-semibold text-xs hover:from-[rgba(74,122,255,.3)] hover:to-[rgba(120,80,220,.3)] transition disabled:opacity-30 disabled:cursor-not-allowed">发送</button>
+    <button id="extraToggleBtn" class="w-8 rounded-lg bg-[rgba(100,90,180,.06)] border border-[rgba(100,90,180,.08)] text-[rgba(180,180,220,.25)] text-xs hover:bg-[rgba(100,90,180,.1)] transition">＋</button>
+  </div>
+</div>
+
+<!-- ===== 侧边栏 ===== -->
+<div id="sidebarOverlay" class="overlay fixed inset-0 z-50 bg-black/40 opacity-0 pointer-events-none"></div>
+<aside id="sidebar" class="sidebar-enter fixed top-0 left-0 z-50 h-full w-[320px] bg-[rgba(14,14,30,.97)] backdrop-blur border-r border-[rgba(100,90,180,.08)] p-5 overflow-y-auto transition-all duration-300 pointer-events-none flex flex-col">
+  <div class="flex items-center justify-between mb-3 shrink-0">
+    <span class="text-xs tracking-[3px] text-[rgba(180,180,220,.3)]">状 态 栏</span>
+    <div class="flex gap-2">
+      <button id="addCharSidebarBtn" class="px-2 py-1 rounded-lg text-[10px] text-[rgba(160,200,160,.4)] border border-[rgba(100,200,100,.1)] hover:bg-[rgba(100,200,100,.06)] transition">新增</button>
+      <button id="delModeBtn" class="px-2 py-1 rounded-lg text-[10px] text-[rgba(200,140,140,.4)] border border-[rgba(200,80,80,.1)] hover:bg-[rgba(200,80,80,.08)] transition">编辑</button>
+      <button id="closeSidebar" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button>
+    </div>
+  </div>
+  <div id="tlDisplay" class="mb-3 text-sm font-bold tracking-[1px] text-[rgba(220,220,240,.55)] leading-relaxed shrink-0"></div>
+  <div class="space-y-3 flex-1 overflow-y-auto" id="sidebarModules"></div>
+  <div class="shrink-0 pt-3 mt-2 border-t border-[rgba(100,90,180,.05)]">
+    <button id="promptGearBtn" class="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs text-[rgba(180,180,220,.3)] hover:text-[rgba(200,200,230,.55)] hover:bg-[rgba(100,90,180,.06)] transition">⚙ 查看发送给 AI 的完整提示词</button>
+  </div>
+</aside>
+
+<!-- ===== 提示词面板 ===== -->
+<div class="prompt-panel-overlay" id="promptOverlay"></div>
+<div class="prompt-panel" id="promptPanel">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-xs tracking-[2px] text-[rgba(180,180,220,.3)]">完整提示词</span>
+    <div class="flex gap-2">
+      <button id="copyPromptBtn" class="px-3 py-1.5 rounded-lg bg-[rgba(100,90,180,.08)] border border-[rgba(100,90,180,.1)] text-[10px] text-[rgba(180,180,220,.4)] hover:bg-[rgba(100,90,180,.14)] transition">复制</button>
+      <button id="closePromptBtn" class="px-3 py-1.5 rounded-lg bg-[rgba(200,60,60,.06)] border border-[rgba(200,60,60,.08)] text-[10px] text-[rgba(220,140,140,.4)] hover:bg-[rgba(200,60,60,.12)] transition">关闭</button>
+    </div>
+  </div>
+  <pre id="promptContent" class="p-4 rounded-xl bg-[rgba(10,10,25,.5)] text-[11px] text-[rgba(200,200,230,.5)] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all max-h-[40vh] overflow-y-auto select-text">暂无</pre>
+</div>
+
+<!-- ===== 日志面板 ===== -->
+<div id="logOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="logModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-md max-h-[75vh] overflow-y-auto rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold tracking-[3px] text-[#c8c8e0]">📝 运行日志</h2>
+      <div class="flex gap-2">
+        <button id="clearLogBtn" class="text-[10px] text-[rgba(200,140,140,.4)] hover:text-[rgba(200,140,140,.6)] transition">清空</button>
+        <button id="closeLog" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button>
+      </div>
+    </div>
+    <div id="logList" class="space-y-1 text-[11px] text-[rgba(200,200,230,.35)]">
+      <div class="text-xs text-[rgba(180,180,220,.15)] text-center py-8">暂无日志</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 摘要面板 ===== -->
+<div id="summaryOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="summaryModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-md max-h-[75vh] overflow-y-auto rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold tracking-[3px] text-[#c8c8e0]">📋 对话摘要</h2>
+      <div class="flex gap-2">
+        <button id="summaryDelModeBtn" class="px-2 py-1 rounded-lg text-[10px] text-[rgba(200,140,140,.4)] border border-[rgba(200,80,80,.1)] hover:bg-[rgba(200,80,80,.08)] transition">删</button>
+        <button id="closeSummary" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button>
+      </div>
+    </div>
+    <div id="summaryDelTools" class="hidden mb-3 flex items-center gap-3">
+      <label class="flex items-center gap-2 text-xs text-[rgba(180,180,220,.3)] cursor-pointer"><input type="checkbox" id="summarySelectAll" class="accent-[rgba(200,80,80,.4)]">全选</label>
+      <button id="summaryDeleteSelected" class="px-3 py-1 rounded-lg text-[10px] text-[rgba(200,140,140,.5)] bg-[rgba(200,60,60,.08)] border border-[rgba(200,60,60,.1)] hover:bg-[rgba(200,60,60,.15)] transition">删除选中</button>
+    </div>
+    <div id="summaryList" class="space-y-2"><div class="text-xs text-[rgba(180,180,220,.15)] text-center py-8">暂无摘要</div></div>
+  </div>
+</div>
+
+<!-- ===== 对话参数面板 ===== -->
+<div id="paramOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="paramModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-xs rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold tracking-[3px] text-[#c8c8e0]">❤️ 对话参数</h2>
+      <button id="closeParam" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button>
+    </div>
+    <div class="space-y-5">
+      <div><div class="flex justify-between text-[10px] text-[rgba(180,180,220,.25)] mb-1"><span>Temperature</span><span id="tempVal">0.70</span></div><input id="tempSlider" type="range" min="0" max="2" step="0.01" value="0.70" oninput="$('tempVal').textContent=this.value" class="w-full"><div class="flex justify-between text-[9px]"><span class="text-[rgba(120,200,120,.4)]">回答更严谨</span><span class="text-[rgba(200,160,80,.4)]">建议0.5-0.9</span><span class="text-[rgba(200,120,160,.4)]">回答更有创意</span></div></div>
+      <div><div class="flex justify-between text-[10px] text-[rgba(180,180,220,.25)] mb-1"><span>Top P</span><span id="topPVal">0.90</span></div><input id="topPSlider" type="range" min="0" max="1" step="0.01" value="0.90" oninput="$('topPVal').textContent=this.value" class="w-full"><div class="flex justify-between text-[9px]"><span class="text-[rgba(180,180,220,.3)]">回答保守</span><span class="text-[rgba(180,180,220,.3)]">回答多样</span></div></div>
+      <div><div class="flex justify-between text-[10px] text-[rgba(180,180,220,.25)] mb-1"><span>重复惩罚</span><span id="penVal">1.00</span></div><input id="penSlider" type="range" min="1" max="1.5" step="0.01" value="1.00" oninput="$('penVal').textContent=this.value" class="w-full"><div class="text-[9px] text-center text-[rgba(200,160,80,.3)]">不宜超过0.3 · 调高可抑制AI反复重复词语句式</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 角色编辑面板 ===== -->
+<div id="charEditOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="charEditModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-sm max-h-[75vh] overflow-y-auto rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-3"><h2 class="text-sm font-semibold tracking-[3px] text-[#c8c8e0]">👤 编辑角色</h2><button id="closeCharEdit" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button></div>
+    <div class="space-y-2"><input type="hidden" id="charEditIdx" value="-1"><input type="hidden" id="charEditSrc" value="">
+      <div id="charTypeRow"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">角色类型</label><select id="charTypeSelect" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none"><option value="protagonist">主角</option><option value="companion">同伴</option><option value="temp">临时角色</option></select></div>
+      <div><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">姓名</label><input id="charNameInput" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="角色名称"></div>
+      <div id="charStatusRow"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">状态</label><input id="charStatusField" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="同行身旁/在外游荡/其他"></div>
+      <div id="charRelationRow"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">关系</label><input id="charRelationField" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="好友/同行/敌人"></div>
+      <div><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">当前修为</label><select id="charRealmSelect" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none"><option value="">--</option></select></div>
+      <div><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">灵根与道行</label><input id="charDaoRoot" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="伪灵根，主金系"></div>
+      <div class="flex gap-2"><div class="flex-1"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">性别</label><select id="charGender" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none"><option value="男">男</option><option value="女">女</option><option value="男女同体">男女同体</option><option value="无性">无性</option></select></div><div class="flex-1"></div></div>
+      <div class="flex items-center gap-1"><span class="text-[10px] text-[rgba(180,180,220,.25)]">血脉</span><button id="addBloodRow" class="text-[10px] text-[rgba(160,180,240,.4)] hover:text-[rgba(160,180,240,.6)] transition">＋</button></div><div id="charBloodList" class="space-y-0.5"></div>
+      <div class="flex items-center gap-2"><span class="text-[10px] text-[rgba(180,180,220,.25)] w-10">宗门</span><select id="charSectToggle" class="rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" onchange="$('charSectFields').style.display=this.value==='yes'?'flex':'none'"><option value="no">无</option><option value="yes">有</option></select><div id="charSectFields" style="display:none" class="flex-1 flex gap-1"><input id="charSectName" class="flex-1 rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="宗门名"><input id="charSectTitle" class="w-16 rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="职位"></div></div>
+      <div class="flex items-center gap-1"><span class="text-[10px] text-[rgba(180,180,220,.25)]">法器</span><button id="addArtifactRow" class="text-[10px] text-[rgba(160,180,240,.4)] hover:text-[rgba(160,180,240,.6)] transition">＋</button></div><div id="charArtifactList" class="space-y-0.5"></div>
+      <div class="flex items-center gap-1"><span class="text-[10px] text-[rgba(180,180,220,.25)]">功法</span><button id="addSkillRow" class="text-[10px] text-[rgba(160,180,240,.4)] hover:text-[rgba(160,180,240,.6)] transition">＋</button></div><div id="charSkillList" class="space-y-0.5"></div>
+      <div class="flex gap-2"><div class="flex-1"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">灵石</label><input id="charStoneInput" type="number" value="0" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none"></div><div class="flex-1"><label class="block text-[10px] text-[rgba(180,180,220,.25)] mb-0.5">背包</label><input id="charInvInput" class="w-full rounded px-2 py-1.5 text-xs bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="灵草×5,符箓×3"></div></div>
+      <button id="saveCharBtn" class="w-full rounded py-2 bg-[rgba(74,122,255,.1)] border border-[rgba(74,122,255,.15)] text-xs text-[rgba(160,180,240,.65)] hover:bg-[rgba(74,122,255,.18)] transition">保存角色</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 确认弹窗 ===== -->
+<div id="confirmOverlay" class="overlay fixed inset-0 z-70 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="confirmModal" class="fixed inset-0 z-70 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-xs rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl text-center">
+    <div id="confirmTitle" class="text-sm font-semibold text-[#c8c8e0] mb-2">确认操作</div>
+    <div id="confirmMsg" class="text-xs text-[rgba(200,200,230,.45)] mb-5"></div>
+    <div class="flex gap-3 justify-center">
+      <button id="confirmCancelBtn" class="px-5 py-2 rounded-lg bg-[rgba(100,90,180,.08)] border border-[rgba(100,90,180,.1)] text-xs text-[rgba(180,180,220,.4)] hover:bg-[rgba(100,90,180,.14)] transition">取消</button>
+      <button id="confirmOkBtn" class="px-5 py-2 rounded-lg bg-[rgba(200,60,60,.1)] border border-[rgba(200,60,60,.12)] text-xs text-[rgba(220,140,140,.5)] hover:bg-[rgba(200,60,60,.18)] transition disabled:opacity-30 disabled:cursor-not-allowed" disabled>确认（10秒）</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 导出/导入面板 ===== -->
+<div id="exportImportOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="exportImportModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-sm rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4"><h2 class="text-base font-semibold tracking-[3px] text-[#c8c8e0]">💾 导出/导入</h2><button id="closeExportImport" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button></div>
+    <div class="space-y-2 mb-4"><div class="text-xs text-[rgba(180,180,220,.3)] mb-2">导出</div>
+      <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[rgba(15,15,35,.3)] border cursor-pointer"><input type="radio" name="exportMode" id="exportAll" checked class="accent-[rgba(180,160,80,.6)]"><span class="text-xs text-[#c0c0e0]">📦 全部</span></label>
+      <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[rgba(15,15,35,.3)] border cursor-pointer"><input type="radio" name="exportMode" id="exportState" class="accent-[rgba(100,90,180,.6)]"><span class="text-xs text-[#c0c0e0]">状态</span></label>
+      <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[rgba(15,15,35,.3)] border cursor-pointer"><input type="radio" name="exportMode" id="exportChat" class="accent-[rgba(100,90,180,.6)]"><span class="text-xs text-[#c0c0e0]">对话</span></label>
+      <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[rgba(15,15,35,.3)] border cursor-pointer"><input type="radio" name="exportMode" id="exportSummaries" class="accent-[rgba(100,90,180,.6)]"><span class="text-xs text-[#c0c0e0]">摘要</span></label>
+    </div>
+    <div class="flex gap-2 mb-4"><button id="doExportBtn" class="flex-1 rounded-lg py-2 bg-[rgba(180,160,80,.1)] border border-[rgba(180,160,80,.15)] text-xs text-[rgba(200,190,140,.6)] hover:bg-[rgba(180,160,80,.18)] transition">导出</button><button id="doImportBtn" class="flex-1 rounded-lg py-2 bg-[rgba(80,160,200,.1)] border border-[rgba(80,160,200,.12)] text-xs text-[rgba(140,190,220,.5)] hover:bg-[rgba(80,160,200,.16)] transition">导入</button></div>
+    <input type="file" id="importFileInput" accept=".json" style="display:none">
+  </div>
+</div>
+
+<!-- ===== 设置面板 ===== -->
+<div id="settingsOverlay" class="overlay fixed inset-0 z-60 bg-black/50 opacity-0 pointer-events-none"></div>
+<div id="settingsModal" class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl bg-[rgba(18,18,38,.97)] backdrop-blur border border-[rgba(100,90,180,.1)] p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-5"><h2 class="text-base font-semibold tracking-[3px] text-[#c8c8e0]">设置</h2><button id="closeSettings" class="text-[rgba(180,180,220,.25)] hover:text-[rgba(200,180,240,.5)] transition text-lg">✕</button></div>
+    <div class="setting-group pb-4 mb-4 api-section" id="mainApiSection"><div class="flex items-center justify-between mb-2 cursor-pointer" onclick="document.getElementById('mainApiSection').classList.toggle('open')"><span class="text-xs tracking-[2px] text-[rgba(180,180,220,.3)]">主API</span><span class="text-[10px] text-[rgba(180,180,220,.2)]">▸</span></div><div class="api-body space-y-2"><div><input id="apiBase" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="主接口地址"></div><div><input id="apiModel" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="主模型名称"></div><div><input id="apiKey" type="password" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="主密钥"></div><div id="mainApiStatus" class="text-[10px]"></div><button id="testMainApiBtn" class="w-full rounded py-2 bg-[rgba(74,122,255,.1)] border border-[rgba(74,122,255,.15)] text-xs text-[rgba(160,180,240,.6)] hover:bg-[rgba(74,122,255,.18)] transition">测试主API</button></div></div>
+    <div class="setting-group pb-4 mb-4 api-section" id="backupApiSection"><div class="flex items-center justify-between mb-2 cursor-pointer" onclick="document.getElementById('backupApiSection').classList.toggle('open')"><span class="text-xs tracking-[2px] text-[rgba(180,180,220,.3)]">备用API</span><span class="text-[10px] text-[rgba(180,180,220,.2)]">▸</span></div><div class="api-body space-y-2"><div><input id="apiBase2" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="备用接口地址"></div><div><input id="apiModel2" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="备用模型名称"></div><div><input id="apiKey2" type="password" class="w-full rounded px-3 py-2 text-sm bg-[rgba(10,10,25,.6)] border border-[rgba(100,90,180,.12)] text-[#d0d0e8] outline-none" placeholder="备用密钥"></div><div id="backupApiStatus" class="text-[10px]"></div><button id="testBackupApiBtn" class="w-full rounded py-2 bg-[rgba(74,122,255,.1)] border border-[rgba(74,122,255,.15)] text-xs text-[rgba(160,180,240,.6)] hover:bg-[rgba(74,122,255,.18)] transition">测试备用API</button></div></div>
+    <div class="setting-group pb-4 mb-4"><div class="flex items-center justify-between"><div><div class="text-xs tracking-[2px] text-[rgba(180,180,220,.3)]">模拟模式</div><div class="text-[10px] text-[rgba(180,180,220,.2)] mt-0.5">开启后使用本地模拟回复</div></div><label class="relative inline-flex items-center cursor-pointer"><input id="simMode" type="checkbox" class="sim-toggle sr-only peer"><div class="sim-slider w-10 h-5 rounded-full bg-[rgba(100,90,180,.15)] transition peer-checked:bg-[rgba(180,160,80,.3)] relative"><span class="sim-dot absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-[rgba(200,200,240,.4)] transition-transform"></span></div></label></div></div>
+    <div class="setting-group pb-4 mb-4 space-y-2"><button id="cleanupBtn" class="w-full rounded py-2.5 bg-[rgba(200,160,80,.08)] border border-[rgba(200,160,80,.12)] text-sm text-[rgba(200,190,140,.5)] hover:bg-[rgba(200,160,80,.14)] transition">清理聊天记录（保留最近300条）</button><button id="resetDataBtn" class="w-full rounded py-2.5 bg-[rgba(200,60,60,.08)] border border-[rgba(200,60,60,.1)] text-sm text-[rgba(220,140,140,.45)] hover:bg-[rgba(200,60,60,.15)] transition">重置所有数据</button></div>
+    <div class="setting-group pb-2"><button id="rawToggle" class="flex items-center justify-between w-full text-xs tracking-[2px] text-[rgba(180,180,220,.3)] py-1"><span>调试：AI原始返回</span><span class="text-[10px] transition-transform" id="rawArrow">▾</span></button><div class="raw-area" id="rawArea"><pre id="rawContent" class="mt-2 p-3 rounded-lg bg-[rgba(10,10,25,.5)] text-[11px] text-[rgba(200,200,230,.45)] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all max-h-48 overflow-y-auto">暂无</pre></div></div>
+  </div>
+</div>
+
+<!-- ===== JS（加载顺序：数据→存储→UI→核心→入口） ===== -->
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/core.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
