@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded',function(){
 </header>
 
 <!-- ===== 聊天区 ===== -->
-<main id="chatArea" class="flex-1 overflow-y-auto pt-14 pb-20 px-4 md:px-8 space-y-4 max-w-4xl mx-auto w-full">
+<main id="chatArea" class="flex-1 min-h-0 overflow-y-auto pt-14 pb-20 px-4 md:px-8 space-y-4 max-w-4xl mx-auto w-full">
   <div class="text-center text-[rgba(220,200,160,.25)] text-sm tracking-[2px] pt-8 select-none">— 故事从这里开始 —</div>
 </main>
 
@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded',function(){
   <div class="max-w-4xl mx-auto flex gap-2 p-2">
     <textarea id="inputBox" rows="1" class="flex-1 resize-none rounded-lg px-3 py-2 bg-[rgba(30,24,18,.7)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] text-sm placeholder:text-[rgba(220,200,160,.15)] outline-none focus:border-[rgba(120,110,220,.3)] transition leading-relaxed" placeholder="输入你的行动…"></textarea>
     <button id="sendBtn" class="w-12 rounded-lg bg-gradient-to-br from-[rgba(180,140,60,.25)] to-[rgba(180,120,40,.25)] border border-[rgba(180,140,60,.22)] text-[#f0e0c8] font-semibold text-xs hover:from-[rgba(180,140,60,.35)] hover:to-[rgba(180,120,40,.35)] transition disabled:opacity-30 disabled:cursor-not-allowed">发送</button>
-    <button id="extraToggleBtn" class="w-8 rounded-lg bg-[rgba(160,120,60,.1)] border border-[rgba(160,120,60,.12)] text-[rgba(220,200,160,.3)] text-xs hover:bg-[rgba(160,120,60,.14)] transition">＋</button>
+    <button id="scrollBottomBtn" class="w-8 rounded-lg bg-[rgba(160,120,60,.1)] border border-[rgba(160,120,60,.12)] text-[rgba(220,200,160,.3)] text-xs hover:bg-[rgba(160,120,60,.14)] transition" title="回到底部">↓</button>
+  <button id="extraToggleBtn" class="w-8 rounded-lg bg-[rgba(160,120,60,.1)] border border-[rgba(160,120,60,.12)] text-[rgba(220,200,160,.3)] text-xs hover:bg-[rgba(160,120,60,.14)] transition">＋</button>
   </div>
 </div>
 

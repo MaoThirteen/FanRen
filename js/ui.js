@@ -53,7 +53,7 @@ function hideModal(ov, md) { ov.classList.remove('opacity-100'); ov.classList.ad
 function closeSidebarFn() { sidebar.classList.remove('sidebar-open'); sidebar.classList.add('sidebar-enter','pointer-events-none'); sidebarOverlay.classList.remove('opacity-100'); sidebarOverlay.classList.add('opacity-0'); sidebarOverlay.style.pointerEvents = 'none'; }
 
 /* ---- 消息渲染 ---- */
-function scrollToBottom() { setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50); }
+function scrollToBottom() { const last = chatArea.lastElementChild; if (last) last.scrollIntoView({ behavior:'smooth', block:'end' }); else chatArea.scrollTop = chatArea.scrollHeight; }
 function appendMsg(r, c, sn) {
   const u = r === 'user'; const h = chatArea.querySelector('.text-center'); if (h) h.remove();
   const d = document.createElement('div'); d.className = 'chat-msg flex ' + (u ? 'justify-end' : 'justify-start');
@@ -89,7 +89,7 @@ function renderCharCard(c, o) {
   const aH = c.artifacts?.length ? c.artifacts.map(a => renderItemLine(a, 'artifact')).join('') : '无';
   const sH = c.skills?.length ? c.skills.map(a => renderItemLine(a, 'skill')).join('') : '无';
   const fH = c.formations?.length ? c.formations.map(a => renderItemLine(a, 'formation')).join('') : '无';
-  const iH = c.inventory?.length ? c.inventory.map(i => '<span class="text-[rgba(255,255,255,.5)]">' + renderInvItem(i) + '</span>').join('') : '空';
+  const iH = c.inventory?.length ? c.inventory.map(i => renderInvItem(i)).join('、') : '空';
   const nCol = pr ? 'text-[#e8c860]' : comp ? 'text-[#90d0a0]' : 'text-[rgba(255,255,255,.75)]';
   const seTxt = c.sect || '无';
   const relTag = !pr && c.relation ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(140,180,100,.1)] border border-[rgba(140,180,100,.15)] text-[rgba(160,200,140,.55)]">' + esc(c.relation) + '</span>' : '';
@@ -106,7 +106,7 @@ function renderCharCard(c, o) {
     + '<div class="text-xs text-[rgba(255,255,255,.5)]">法力：' + (c.mp || 0) + '/' + (c.mpMax || 50) + '（' + getMpStage(mP) + '）</div>'
     + bar('', c.mp || 0, c.mpMax || 50, 'from-[#4a7aff] to-[#3060d0]')
     + collapsibleBlock('法器', c.artifacts?.length, aH) + collapsibleBlock('功法', c.skills?.length, sH) + collapsibleBlock('符箓/阵盘', c.formations?.length, fH)
-    + collapsibleBlock('背包', c.inventory?.length, '<div class="text-xs text-[rgba(255,255,255,.5)] leading-relaxed">' + iH + '</div>', '空')
+    + collapsibleBlock('背包', c.inventory?.length, '<div class="text-xs text-[rgba(255,255,255,.5)] leading-relaxed">' + iH + '</div>')
     + '<div class="text-xs font-semibold text-[#e8c860]">灵石：' + (c.spiritStones || 0) + '</div>'
     + (c.bio ? collapsibleBlock('生平' + (deleteMode ? ' <span class="text-[10px] cursor-pointer" onclick="event.stopPropagation();toggleBioLock(\'' + esc(c.name) + '\')">' + ((getConfig().bioLocked||{})[c.name] ? '🔒' : '🔓') + '</span>' : ''), undefined, '<div class="text-xs text-[rgba(220,180,100,.5)] leading-relaxed">' + esc(c.bio) + '</div>') : '')
     + '<div class="text-xs text-[rgba(255,255,255,.4)]">身体/行动：' + esc(c.status || c.tag || '') + '</div>';
@@ -193,7 +193,7 @@ function addFormationRowUI(v) {
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
     + '<input placeholder="名称" class="flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
-    + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + ARTIFACT_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
+    + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'

@@ -74,7 +74,7 @@ function parseAndSaveStatus(rt) {
       } else { sn = '⚠ 状态结构不完整'; addLog('⚠ 状态结构不完整'); }
     } else { sn = '⚠ JSON解析失败'; }
   } else { sn = '⚠ 未检测到状态更新'; const tail = rt.slice(-200).replace(/[\n\r]+/g, '↵'); addLog('⚠ 未检测到状态代码块 → 末尾: ' + tail); }
-  let st = rt.replace(/```[\s\S]*?```/g, '').trim();
+  let st = rt.replace(/```[\s\S]*?```/g, '').replace(/\x60{1,3}\s*(?:status|json)?[\s\S]{0,50}/g, '').trim();
   if (!data.chatHistory) data.chatHistory = []; data.chatHistory.push({ role:'assistant', content:st, statusNotice:sn }); saveAll();
   return { sn, st };
 }

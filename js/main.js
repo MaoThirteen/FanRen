@@ -15,6 +15,7 @@ function init() {
   inputBox.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputBox.value); } });
   sendBtn.addEventListener('click', () => sendMessage(inputBox.value));
   let extraOpen = false; extraToggleBtn.addEventListener('click', () => { extraOpen = !extraOpen; extraPanel.style.maxHeight = extraOpen ? '200px' : '0'; extraToggleBtn.textContent = extraOpen ? '收起' : '＋'; });
+  const sbb = document.getElementById('scrollBottomBtn'); if (sbb) sbb.addEventListener('click', () => { const last = chatArea.lastElementChild; if (last) last.scrollIntoView({ behavior:'smooth', block:'end' }); else chatArea.scrollTop = chatArea.scrollHeight; sbb.style.color = '#f0e8d8'; setTimeout(() => { sbb.style.color = ''; }, 200); });
 
   // 侧边栏
   menuBtn.addEventListener('click', () => { sidebar.classList.remove('sidebar-enter','pointer-events-none'); sidebar.classList.add('sidebar-open'); sidebarOverlay.classList.remove('opacity-0','pointer-events-none'); sidebarOverlay.classList.add('opacity-100'); sidebarOverlay.style.pointerEvents = 'auto'; });
@@ -42,10 +43,10 @@ function init() {
     if (!isNew && type !== 'protagonist') type = charTypeSelect.value;
     const realm = charRealmSelect.value; if (!realm) { showToast('请选择修为境界'); return; }
     const sect = charSectToggle.value === 'yes' ? charSectName.value.trim() || '未知宗门' : '无'; const sectTitle = charSectToggle.value === 'yes' ? charSectTitle.value.trim() || '散修' : '散修';
-    const artifacts = collectCharItems(charArtifactList, ARTIFACT_GRADES, 'artifact'); const skills = collectCharItems(charSkillList, SKILL_GRADES, 'skill'); const formations = collectCharItems(charFormationList, ARTIFACT_GRADES, 'formation');
+    const artifacts = collectCharItems(charArtifactList, ARTIFACT_GRADES, 'artifact'); const skills = collectCharItems(charSkillList, SKILL_GRADES, 'skill'); const formations = collectCharItems(charFormationList, FORMATION_GRADES, 'formation');
     const goal = charGoal ? charGoal.value.trim() : '';
     const stones = parseInt(charStoneInput.value) || 0;
-    const invRaw = charInvInput.value.trim(); const inv = invRaw ? invRaw.split(/[,，]/).map(s => { const t = s.trim(); if (!t) return null; const m = t.match(/×(\d+)/); return m ? { name:t.replace(/×\d+/, '').trim(), count:parseInt(m[1]) } : { name:t, count:1 }; }).filter(Boolean) : [];
+    const invRaw = charInvInput.value.trim(); const inv = invRaw ? invRaw.split(/[,，、]/).map(s => { const t = s.trim(); if (!t) return null; const m = t.match(/×(\d+)/); return m ? { name:t.replace(/×\d+/, '').trim(), count:parseInt(m[1]) } : { name:t, count:1 }; }).filter(Boolean) : [];
     const rd = getRealmDefaults(realm); const isNC = isNew; let prevE = 0;
     if (!isNC) { const src = getState(); if (type === 'protagonist') prevE = src.protagonist.exp || 0; else if (type === 'companion') prevE = (src.companions[parseInt(charEditIdx.value)] || {}).exp || 0; else prevE = (src.tempCharacters[parseInt(charEditIdx.value)] || {}).exp || 0; }
     const gender = charGender.value || '男';

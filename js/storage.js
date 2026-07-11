@@ -83,7 +83,7 @@ function loadAll() {
 
 data = loadAll();
 if (!data) { data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:defaultWorldBook() }; saveAll(); }
-else { validateRealmStats(data.state); if (!data.worldBook || !data.worldBook.includes('突破条件')) data.worldBook = defaultWorldBook(); }
+else { validateRealmStats(data.state); if (!data.worldBook || !data.worldBook.includes('1.12')) data.worldBook = defaultWorldBook(); }
 
 function saveAll() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {} }
 function getState() { return data.state; }
