@@ -56,9 +56,10 @@ function closeSidebarFn() { sidebar.classList.remove('sidebar-open'); sidebar.cl
 function scrollToBottom() { const last = chatArea.lastElementChild; if (last) last.scrollIntoView({ behavior:'smooth', block:'end' }); else chatArea.scrollTop = chatArea.scrollHeight; }
 function appendMsg(r, c, sn) {
   const u = r === 'user'; const h = chatArea.querySelector('.text-center'); if (h) h.remove();
+  const content = u ? c : cleanNarrative(c); // assistant消息兜底清洗（防旧数据残留代码块）
   const d = document.createElement('div'); d.className = 'chat-msg flex ' + (u ? 'justify-end' : 'justify-start');
   const m = u ? 'max-w-[75%]' : 'max-w-[85%]';
-  d.innerHTML = '<div class="' + m + ' rounded-2xl px-4 py-3 ' + (u ? 'bg-gradient-to-br from-[rgba(180,140,60,.15)] to-[rgba(180,120,40,.1)] border border-[rgba(180,140,60,.12)]' : 'bg-[rgba(28,24,20,.6)] border border-[rgba(160,120,60,.1)]') + '"><div class="text-sm leading-relaxed whitespace-pre-wrap text-[rgba(255,255,255,.75)]">' + esc(c) + '</div>' + (sn ? '<div class="text-[10px] mt-1.5 ' + (sn.includes('✓') ? 'text-[rgba(120,200,160,.5)]' : 'text-[rgba(220,180,100,.45)]') + '">' + sn + '</div>' : '') + '</div>';
+  d.innerHTML = '<div class="' + m + ' rounded-2xl px-4 py-3 ' + (u ? 'bg-gradient-to-br from-[rgba(180,140,60,.15)] to-[rgba(180,120,40,.1)] border border-[rgba(180,140,60,.12)]' : 'bg-[rgba(28,24,20,.6)] border border-[rgba(160,120,60,.1)]') + '"><div class="text-sm leading-relaxed whitespace-pre-wrap text-[rgba(255,255,255,.75)]">' + esc(content) + '</div>' + (sn ? '<div class="text-[10px] mt-1.5 ' + (sn.includes('✓') ? 'text-[rgba(120,200,160,.5)]' : 'text-[rgba(220,180,100,.45)]') + '">' + sn + '</div>' : '') + '</div>';
   chatArea.appendChild(d); scrollToBottom();
 }
 function renderMessages() { const ms = data.chatHistory || []; chatArea.innerHTML = '<div class="text-center text-[rgba(220,200,160,.25)] text-sm tracking-[2px] pt-8 select-none">— 故事从这里开始 —</div>'; ms.forEach(m => appendMsg(m.role, m.content, m.statusNotice)); scrollToBottom(); }
