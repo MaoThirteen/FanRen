@@ -16,6 +16,9 @@ const testMainApiBtn = $('testMainApiBtn'), testBackupApiBtn = $('testBackupApiB
 const cleanupBtn = $('cleanupBtn'), resetDataBtn = $('resetDataBtn'), rawToggle = $('rawToggle'), rawArea = $('rawArea'), rawContent = $('rawContent'), rawArrow = $('rawArrow');
 const summaryBtn = $('summaryBtn'), summaryOverlay = $('summaryOverlay'), summaryModal = $('summaryModal'), summaryList = $('summaryList'), closeSummary = $('closeSummary');
 const summaryDelModeBtn = $('summaryDelModeBtn'), summaryDelTools = $('summaryDelTools'), summarySelectAll = $('summarySelectAll'), summaryDeleteSelected = $('summaryDeleteSelected');
+const summarizeBtn = $('summarizeBtn');
+const summaryPromptBtn = $('summaryPromptBtn'), summaryPromptArea = $('summaryPromptArea'), summaryPromptContent = $('summaryPromptContent');
+const autoSummarizeToggle = $('autoSummarizeToggle'), autoSumEvery = $('autoSumEvery'), autoSumRounds = $('autoSumRounds');
 const logBtn = $('logBtn'), logOverlay = $('logOverlay'), logModal = $('logModal'), logList = $('logList'), closeLog = $('closeLog'), clearLogBtn = $('clearLogBtn');
 const charEditOverlay = $('charEditOverlay'), charEditModal = $('charEditModal'), closeCharEdit = $('closeCharEdit');
 const charTypeSelect = $('charTypeSelect'), charNameInput = $('charNameInput'), charRealmSelect = $('charRealmSelect');
@@ -164,7 +167,7 @@ function addArtifactRowUI(v) {
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.artifact-row\').remove()">✕</button>'
     + '</div>'
     + '<div class="flex gap-2 mt-0.5">' + ARTIFACT_CATEGORIES.map(c => '<label class="text-[9px] text-[rgba(220,200,160,.35)] cursor-pointer"><input type="checkbox" class="art-cat-chk mr-0.5 accent-[rgba(160,200,240,.5)]" value="' + c + '"' + (cats.includes(c) ? ' checked' : '') + '>' + c + '</label>').join('') + '</div>'
-    + '<input placeholder="备注（样子、功能）" maxlength="30" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<input placeholder="备注（样子、功能）" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
   attachDragEvents(d, charArtifactList, 'artifact-row');
   charArtifactList.appendChild(d);
 }
@@ -181,7 +184,7 @@ function addSkillRowUI(v) {
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '可用') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.skill-row\').remove()">✕</button>'
     + '</div>'
-    + '<input placeholder="功能介绍" maxlength="25" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<input placeholder="功能介绍" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
   attachDragEvents(d, charSkillList, 'skill-row');
   charSkillList.appendChild(d);
 }
@@ -198,7 +201,7 @@ function addFormationRowUI(v) {
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'
-    + '<input placeholder="备注" maxlength="30" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<input placeholder="备注" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
   attachDragEvents(d, charFormationList, 'formation-row');
   charFormationList.appendChild(d);
 }
@@ -273,7 +276,7 @@ function toggleBioLock(name) { const bl = getConfig().bioLocked || {}; bl[name] 
 
 /* 世界书折叠渲染 */
 function renderWorldBookSections(text) {
-  const sections = text.split(/(?=[一二三四五六七八]、)/);
+  const sections = text.split(/(?=[一二三四五六七八九]、)/);
   let html = '';
   sections.forEach((sec, i) => {
     const id = 'wb_' + i; const trimmed = sec.trim();

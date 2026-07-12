@@ -22,6 +22,9 @@ function loadAll() {
     if (d.config.theme === undefined) d.config.theme = 'dark';
     if (d.config.shownGuide === undefined) d.config.shownGuide = false;
     if (d.config.bioLocked === undefined) d.config.bioLocked = {};
+    if (d.config.autoSummarize === undefined) d.config.autoSummarize = false;
+    if (d.config.autoSumEvery === undefined) d.config.autoSumEvery = 50;
+    if (d.config.autoSumRounds === undefined) d.config.autoSumRounds = 10;
     if (!d.chatHistory) d.chatHistory = d.messages || [];
     if (!d.summaries) d.summaries = [];
     if (!d.logs) d.logs = [];
@@ -83,7 +86,7 @@ function loadAll() {
 
 data = loadAll();
 if (!data) { data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:defaultWorldBook() }; saveAll(); }
-else { validateRealmStats(data.state); if (!data.worldBook || !data.worldBook.includes('1.12')) data.worldBook = defaultWorldBook(); }
+else { validateRealmStats(data.state); if (!data.worldBook || !data.worldBook.includes('1.13')) data.worldBook = defaultWorldBook(); }
 
 function saveAll() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {} }
 function getState() { return data.state; }

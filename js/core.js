@@ -63,6 +63,10 @@ function parseAndSaveStatus(rt) {
     }
     if (p) {
       if (p.protagonist) {
+        // 清洗所有角色的境界名（去除巅峰/圆满等后缀）
+        if (p.protagonist.realm) p.protagonist.realm = normalizeRealm(p.protagonist.realm);
+        (p.companions || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
+        (p.tempCharacters || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         if (p.roundSummary) { if (!data.summaries) data.summaries = []; data.summaries.push(p.roundSummary); delete p.roundSummary; }
         if (p.timeLocation && p.timeLocation.time) data.state.timeLocation = p.timeLocation;
         data.state = p;
@@ -143,6 +147,11 @@ async function sendMessage(u, isRegen) {
     const { sn, st } = parseAndSaveStatus(fullText);
     appendMsg('assistant', st, sn);
     addRegenBtn();
+    // 自动总结触发检查：摘要累积达到设定轮数时触发
+    if (cfg.autoSummarize && data.summaries && data.summaries.length >= (cfg.autoSumEvery || 10)) {
+      addLog('⚡ 摘要达到' + data.summaries.length + '轮，触发自动总结（取前' + (cfg.autoSumRounds || 5) + '轮）…');
+      summarizeSummaries(cfg.autoSumRounds || 5);
+    }
   } catch (err) {
     removeStreamBubble();
     const em = '请求失败：' + err.message;
@@ -151,4 +160,96 @@ async function sendMessage(u, isRegen) {
     addLog('⚠ 请求失败: ' + err.message);
   }
   isLoading = false; sendBtn.disabled = false; sendBtn.textContent = '发送';
+}
+
+/* 摘要总结：将前n轮摘要发送至摘要总结API，返回300~500字总结 */
+async function summarizeSummaries(rounds) {
+  const all = data.summaries || [];
+  if (!all.length) { showToast('没有摘要可总结'); return; }
+  const su = rounds && rounds > 0 ? all.slice(0, rounds) : all;
+  if (!su.length) { showToast('没有摘要可总结'); return; }
+  const cfg = getConfig();
+  const base = cfg.apiBase2, model = cfg.apiModel2, key = cfg.apiKey2;
+  if (!base || !model || !key) { showToast('请先在设置中配置"摘要总结API"'); return; }
+  // 持久加载弹窗 + 计时器
+  let toastEl = document.getElementById('summarizeToast');
+  if (!toastEl) { toastEl = document.createElement('div'); toastEl.id = 'summarizeToast'; toastEl.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:12px;background:rgba(25,28,60,.94);border:1px solid rgba(100,90,180,.16);color:#c0c0e0;font-size:14px;letter-spacing:1px;pointer-events:none;backdrop-filter:blur(10px);opacity:0;transition:opacity .3s'; document.body.appendChild(toastEl); }
+  toastEl.textContent = '⏳ 正在总结 ' + su.length + ' 轮摘要… 0秒'; toastEl.style.opacity = '1';
+  let sumSec = 0; const sumTimer = setInterval(() => { sumSec++; toastEl.textContent = '⏳ 正在总结 ' + su.length + ' 轮摘要… ' + sumSec + '秒'; }, 1000);
+  function dismissSumToast(msg) { clearInterval(sumTimer); toastEl.textContent = msg; setTimeout(() => { toastEl.style.opacity = '0'; }, 3000); }
+  try {
+    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数应在800~1000字之间，允许小幅偏差但不得过大或过小。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
+    const r = await fetch(base + '/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
+      body: JSON.stringify({ model, messages:[{ role:'user', content:prompt }], temperature:0.3, max_tokens:8000, reasoning_effort:'disabled' })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    let result = j.choices?.[0]?.message?.content?.trim() || '';
+    // 兜底：推理模型把内容放在 reasoning_content 中
+    const reasoning = j.choices?.[0]?.message?.reasoning_content;
+    if ((!result || result.length < 50) && reasoning) {
+      result = reasoning.trim();
+      addLog('⚠ 摘要模型返回了推理内容，已兜底使用reasoning_content');
+    }
+    // 清洗：检测模型是否把思考过程吐在了正文里，提取最后的叙事总结
+    const thinkingMarkers = ['首先，用户要求我','根据规则','列出关键事件','] 现在','现在，我需要','好的，我来','] 我来','首先，我','压缩技巧','筛选规则','早期剧情'];
+    let hasThinking = false;
+    for (const m of thinkingMarkers) { if (result.includes(m)) { hasThinking = true; break; } }
+    if (hasThinking) {
+      // 找所有以"猫十三"开头的段落
+      const parts = result.split(/\n(?=猫十三)/);
+      if (parts.length > 1) {
+        result = parts[parts.length - 1].trim();
+        addLog('⚠ 检测到思考过程，已截取最后一段以"猫十三"开头的总结');
+      } else {
+        // 找不到"猫十三"段落，尝试从最后出现"猫十三"的位置截取
+        const idx = result.lastIndexOf('猫十三');
+        if (idx > result.length / 2) {
+          result = result.substring(idx).trim();
+          addLog('⚠ 检测到思考过程，已从最后"猫十三"处截取');
+        } else {
+          addLog('⚠ 检测到思考过程但无法提取有效总结，返回空');
+          result = '';
+        }
+      }
+    }
+    // 限制结果长度
+    if (result.length > 1200) { result = result.substring(0, 1200); addLog('⚠ 总结超1200字，已截断'); }
+    // 日志记录
+    let usage = j.usage || j.model_usage || (j.choices?.[0]?.usage);
+    if (usage) {
+      const tout = usage.completion_tokens || usage.output_tokens || 0;
+      const cached = usage.prompt_tokens_details?.cached_tokens || usage.cached_prompt_tokens || 0;
+      const tmiss = (usage.prompt_tokens || 0) - cached;
+      if (cached > 0) {
+        addLog('摘要总结完成 输入（命中缓存）：' + cached + '，输入（未命中缓存）：' + tmiss + '，输出：' + tout);
+      } else {
+        addLog('摘要总结完成 输入：' + (usage.prompt_tokens||'?') + '，输出：' + tout);
+      }
+    } else {
+      addLog('摘要总结完成 输出：' + (result.length > 0 ? result.length + '字' : '空'));
+    }
+    if (result) {
+      // 从前往后：用新总结替换前rounds条，保留后面的
+      if (rounds && rounds > 0 && rounds < all.length) {
+        data.summaries = [result, ...all.slice(rounds)];
+      } else {
+        data.summaries = [result];
+      }
+      saveAll();
+      // 直接更新 DOM（避免跨文件函数调用失败）
+      const sl = document.getElementById('summaryList');
+      if (sl) { sl.innerHTML = data.summaries.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><span class="text-[rgba(180,180,220,.2)] text-xs shrink-0">#' + (i + 1) + '</span><span class="text-xs text-[rgba(200,200,230,.5)] flex-1">' + esc(s) + '</span></div>').join(''); }
+      dismissSumToast('✓ 摘要总结完成（' + su.length + '条→1条，耗时' + sumSec + '秒）');
+      addLog('✓ 摘要总结完成 · ' + su.length + '条合并为1条（' + result.length + '字）');
+    } else {
+      dismissSumToast('⚠ 摘要返回内容为空');
+      addLog('⚠ 摘要总结失败：API返回空内容（token: ' + (usage?.completion_tokens||'?') + '）');
+    }
+  } catch (err) {
+    dismissSumToast('⚠ 摘要总结失败');
+    addLog('⚠ 摘要总结失败: ' + err.message);
+  }
 }

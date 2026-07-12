@@ -75,12 +75,33 @@ function init() {
   copyPromptBtn.addEventListener('click', () => { navigator.clipboard.writeText(promptContent.textContent).then(() => { copyPromptBtn.textContent = '已复制'; setTimeout(() => { copyPromptBtn.textContent = '复制'; }, 1500); }).catch(() => {}); });
 
   // 摘要
-  summaryBtn.addEventListener('click', () => { renderSumList(); showModal(summaryOverlay, summaryModal); });
-  function closeSum() { hideModal(summaryOverlay, summaryModal); }
+  function loadAutoSumCfg() { const c = getConfig(); if (autoSummarizeToggle) autoSummarizeToggle.checked = !!c.autoSummarize; if (autoSumEvery) autoSumEvery.value = c.autoSumEvery || 10; if (autoSumRounds) autoSumRounds.value = c.autoSumRounds || 5; }
+  function saveAutoSumCfg() { const c = getConfig(); c.autoSummarize = autoSummarizeToggle ? autoSummarizeToggle.checked : false; c.autoSumEvery = autoSumEvery ? parseInt(autoSumEvery.value) || 10 : 10; c.autoSumRounds = autoSumRounds ? parseInt(autoSumRounds.value) || 5 : 5; saveAll(); }
+  if (autoSummarizeToggle) autoSummarizeToggle.addEventListener('change', saveAutoSumCfg);
+  if (autoSumEvery) autoSumEvery.addEventListener('change', saveAutoSumCfg);
+  if (autoSumRounds) autoSumRounds.addEventListener('change', saveAutoSumCfg);
+  summaryBtn.addEventListener('click', () => { renderSumList(); loadAutoSumCfg(); showModal(summaryOverlay, summaryModal); });
+  function closeSum() { saveAutoSumCfg(); hideModal(summaryOverlay, summaryModal); }
   closeSummary.addEventListener('click', closeSum); summaryOverlay.addEventListener('click', closeSum);
   summaryDelModeBtn.addEventListener('click', () => { summaryDeleteMode = !summaryDeleteMode; summaryDelTools.classList.toggle('hidden', !summaryDeleteMode); summaryDelModeBtn.style.background = summaryDeleteMode ? 'rgba(200,80,80,.15)' : ''; renderSumList(); });
   summarySelectAll.addEventListener('change', () => { document.querySelectorAll('.sumChk').forEach(c => c.checked = summarySelectAll.checked); });
   summaryDeleteSelected.addEventListener('click', () => { const ids = []; document.querySelectorAll('.sumChk:checked').forEach(c => ids.push(parseInt(c.dataset.idx))); if (!ids.length) { showToast('请选择要删除的摘要'); return; } showSimpleConfirm('确定删除选中的 ' + ids.length + ' 条摘要吗？', () => { ids.sort((a, b) => b - a).forEach(i => data.summaries.splice(i, 1)); saveAll(); renderSumList(); showToast('已删除'); }); });
+  if (summarizeBtn) summarizeBtn.addEventListener('click', () => {
+    const roundsEl = document.getElementById('summaryRounds');
+    const rounds = roundsEl ? parseInt(roundsEl.value) || 0 : 0;
+    if (!rounds || rounds <= 0) { showToast('请填写要总结的轮次数'); return; }
+    summarizeSummaries(rounds);
+  });
+  if (summaryPromptBtn) summaryPromptBtn.addEventListener('click', () => {
+    const all = data.summaries || [];
+    const roundsEl = document.getElementById('summaryRounds');
+    const rounds = roundsEl ? parseInt(roundsEl.value) || all.length : all.length;
+    const su = rounds > 0 && rounds < all.length ? all.slice(0, rounds) : all;
+    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数应在800~1000字之间，允许小幅偏差但不得过大或过小。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
+    summaryPromptContent.textContent = prompt;
+    summaryPromptArea.classList.toggle('hidden');
+    summaryPromptBtn.textContent = summaryPromptArea.classList.contains('hidden') ? '提示词' : '隐藏';
+  });
 
   // 日志
   logBtn.addEventListener('click', () => { renderLogs(); showModal(logOverlay, logModal); });
