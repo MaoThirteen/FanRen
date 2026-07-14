@@ -68,8 +68,14 @@ function parseAndSaveStatus(rt) {
         (p.companions || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         (p.tempCharacters || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         if (p.roundSummary) { if (!data.summaries) data.summaries = []; data.summaries.push(p.roundSummary); delete p.roundSummary; }
-        if (p.timeLocation && p.timeLocation.time) data.state.timeLocation = p.timeLocation;
+        const prevTL = data.state.timeLocation;
         data.state = p;
+        // 兼容AI返回字符串格式的timeLocation："时间·地点·细节（可含任意多·）"
+        if (typeof data.state.timeLocation === 'string') {
+          const parts = data.state.timeLocation.split('·').map(s => s.trim()).filter(Boolean);
+          data.state.timeLocation = { time: parts[0] || '', location: parts[1] || '', detail: parts.slice(2).join('·') };
+        }
+        if (!data.state.timeLocation || !data.state.timeLocation.time) data.state.timeLocation = prevTL || defaultState().timeLocation;
         // 清洗 inventory name 中的数量后缀（AI可能把"丹药x12"写在name而非count）
         const cleanInv = (arr) => arr && arr.forEach(it => { if (it.name) it.name = it.name.replace(/[\s]*[x×X][\s]*\d+[\s]*$/g, '').trim(); });
         cleanInv(data.state.protagonist?.inventory);
