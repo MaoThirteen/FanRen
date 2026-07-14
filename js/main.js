@@ -92,12 +92,16 @@ function init() {
     if (!rounds || rounds <= 0) { showToast('请填写要总结的轮次数'); return; }
     summarizeSummaries(rounds);
   });
+  if (addSummaryBtn) addSummaryBtn.addEventListener('click', () => {
+    const txt = prompt('请输入摘要内容：');
+    if (txt && txt.trim()) { if (!data.summaries) data.summaries = []; data.summaries.push(txt.trim()); saveAll(); renderSumList(); showToast('✓ 摘要已新增'); }
+  });
   if (summaryPromptBtn) summaryPromptBtn.addEventListener('click', () => {
     const all = data.summaries || [];
     const roundsEl = document.getElementById('summaryRounds');
     const rounds = roundsEl ? parseInt(roundsEl.value) || all.length : all.length;
     const su = rounds > 0 && rounds < all.length ? all.slice(0, rounds) : all;
-    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数应在800~1000字之间，允许小幅偏差但不得过大或过小。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
+    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数1200字以内，尽可能压缩。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
     summaryPromptContent.textContent = prompt;
     summaryPromptArea.classList.toggle('hidden');
     summaryPromptBtn.textContent = summaryPromptArea.classList.contains('hidden') ? '提示词' : '隐藏';
@@ -113,9 +117,9 @@ function init() {
   exportImportBtn.addEventListener('click', () => { $('exportAll').checked = true; showModal(exportImportOverlay, exportImportModal); });
   function closeEI() { hideModal(exportImportOverlay, exportImportModal); }
   closeExportImport.addEventListener('click', closeEI); exportImportOverlay.addEventListener('click', closeEI);
-  doExportBtn.addEventListener('click', () => { const mode = $('exportAll').checked ? 'all' : $('exportState').checked ? 'state' : $('exportChat').checked ? 'chat' : 'summaries'; if (!mode) { showToast('请选择导出类型'); return; } const cn = getState().protagonist.name.replace(/[\/\\?*<>|:"]/g, '_'); let obj, fn; if (mode === 'all') { obj = { version:'1.0', state:getState(), chatHistory:data.chatHistory, summaries:data.summaries }; fn = cn + '_全部.json'; } else if (mode === 'state') { obj = { type:'state', data:getState() }; fn = cn + '_状态.json'; } else if (mode === 'chat') { obj = { type:'chat', data:data.chatHistory }; fn = cn + '_对话.json'; } else { obj = { type:'summaries', data:data.summaries }; fn = cn + '_摘要.json'; } const json = JSON.stringify(obj, null, 2), blob = new Blob([json], { type:'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = fn; a.click(); URL.revokeObjectURL(url); showToast('✓ 导出成功'); });
+  doExportBtn.addEventListener('click', () => { const mode = $('exportAll').checked ? 'all' : $('exportState').checked ? 'state' : $('exportChat').checked ? 'chat' : $('exportSummaries').checked ? 'summaries' : 'worldbook'; if (!mode) { showToast('请选择导出类型'); return; } const cn = getState().protagonist.name.replace(/[\/\\?*<>|:"]/g, '_'); let obj, fn; if (mode === 'all') { obj = { version:'1.0', state:getState(), chatHistory:data.chatHistory, summaries:data.summaries, worldBook:wbString(data.worldBook) }; fn = cn + '_全部.json'; } else if (mode === 'state') { obj = { type:'state', data:getState() }; fn = cn + '_状态.json'; } else if (mode === 'chat') { obj = { type:'chat', data:data.chatHistory }; fn = cn + '_对话.json'; } else if (mode === 'summaries') { obj = { type:'summaries', data:data.summaries }; fn = cn + '_摘要.json'; } else { obj = { type:'worldbook', data:wbString(data.worldBook) }; fn = cn + '_世界书.json'; } const json = JSON.stringify(obj, null, 2), blob = new Blob([json], { type:'application/json' }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = fn; a.click(); URL.revokeObjectURL(url); showToast('✓ 导出成功'); });
   doImportBtn.addEventListener('click', () => importFileInput.click());
-  importFileInput.addEventListener('change', function() { const f = this.files[0]; if (!f) return; const r = new FileReader(); r.onload = function(e) { try { const j = JSON.parse(e.target.result); if (j.type === 'state' && j.data?.protagonist) { data.state = j.data; saveAll(); renderSidebar(); showToast('✓ 状态已导入'); } else if (j.type === 'chat' && Array.isArray(j.data)) { data.chatHistory = j.data; saveAll(); renderMessages(); showToast('✓ 对话已导入'); } else if (j.type === 'summaries' && Array.isArray(j.data)) { data.summaries = j.data; saveAll(); showToast('✓ 摘要已导入'); } else if (j.state?.protagonist) { data.state = j.state; if (j.chatHistory) data.chatHistory = j.chatHistory; if (j.summaries) data.summaries = j.summaries; saveAll(); renderSidebar(); renderMessages(); showToast('✓ 全部已导入'); } else showToast('⚠ 格式不匹配'); closeEI(); } catch (_) { showToast('⚠ 文件解析失败'); } }; r.readAsText(f); this.value = ''; });
+  importFileInput.addEventListener('change', function() { const f = this.files[0]; if (!f) return; const r = new FileReader(); r.onload = function(e) { try { const j = JSON.parse(e.target.result); if (j.type === 'state' && j.data?.protagonist) { data.state = j.data; saveAll(); renderSidebar(); showToast('✓ 状态已导入'); } else if (j.type === 'chat' && Array.isArray(j.data)) { data.chatHistory = j.data; saveAll(); renderMessages(); showToast('✓ 对话已导入'); } else if (j.type === 'summaries' && Array.isArray(j.data)) { data.summaries = j.data; saveAll(); showToast('✓ 摘要已导入'); } else if (j.type === 'worldbook' && j.data) { data.worldBook = typeof j.data === 'string' ? parseWorldBookSections(j.data) : (Array.isArray(j.data) ? j.data : parseWorldBookSections(j.data)); saveAll(); showToast('✓ 世界书已导入'); } else if (j.state?.protagonist) { data.state = j.state; if (j.chatHistory) data.chatHistory = j.chatHistory; if (j.summaries) data.summaries = j.summaries; if (j.worldBook) data.worldBook = typeof j.worldBook === 'string' ? parseWorldBookSections(j.worldBook) : j.worldBook; saveAll(); renderSidebar(); renderMessages(); showToast('✓ 全部已导入'); } else showToast('⚠ 格式不匹配'); closeEI(); } catch (_) { showToast('⚠ 文件解析失败'); } }; r.readAsText(f); this.value = ''; });
 
   // 设置
   settingsBtn.addEventListener('click', () => { const c = getConfig(); apiBase.value = c.apiBase || ''; apiBase2.value = c.apiBase2 || ''; apiModel.value = c.apiModel || ''; apiModel2.value = c.apiModel2 || ''; apiKey.value = c.apiKey || ''; apiKey2.value = c.apiKey2 || ''; simMode.checked = c.simMode !== false; mainApiStatus.textContent = ''; backupApiStatus.textContent = ''; showModal(settingsOverlay, settingsModal); });
@@ -125,7 +129,7 @@ function init() {
   testMainApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase.value.trim() || c.apiBase, apiModel.value.trim() || c.apiModel, apiKey.value.trim() || c.apiKey, mainApiStatus); });
   testBackupApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase2.value.trim() || c.apiBase2, apiModel2.value.trim() || c.apiModel2, apiKey2.value.trim() || c.apiKey2, backupApiStatus); });
   cleanupBtn.addEventListener('click', () => { const t = data.chatHistory?.length || 0; if (t <= 300) { alert('不足300条，无需清理'); return; } if (!confirm('删除前 ' + (t - 300) + ' 条，保留最近300条？')) return; const r = t - 300; data.chatHistory = data.chatHistory.slice(r); saveAll(); renderMessages(); alert('已清理 ' + r + ' 条'); });
-  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:defaultWorldBook() }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
+  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'欢迎使用世界书', content:'请先导入世界书或点击一键导入' }] }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
   rawToggle.addEventListener('click', () => { rawArea.classList.toggle('open'); rawArrow.textContent = rawArea.classList.contains('open') ? '▴' : '▾'; rawContent.textContent = getConfig().lastRaw || '暂无记录'; });
 
   // Esc关闭
@@ -135,7 +139,7 @@ function init() {
 function renderSumList() {
   const su = data.summaries || [];
   if (!su.length) { summaryList.innerHTML = '<div class="text-xs text-[rgba(180,180,220,.15)] text-center py-8">暂无摘要</div>'; return; }
-  summaryList.innerHTML = su.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><span class="text-[rgba(180,180,220,.2)] text-xs shrink-0">#' + (i + 1) + '</span><span class="text-xs text-[rgba(200,200,230,.5)] flex-1">' + esc(s) + '</span>' + (summaryDeleteMode ? '<input type="checkbox" class="sumChk shrink-0 mt-0.5 accent-[rgba(200,80,80,.4)]" data-idx="' + i + '">' : '') + '</div>').join('');
+  summaryList.innerHTML = su.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><div class="shrink-0 text-center"><div class="text-[11px] text-[rgba(180,180,220,.3)]">#' + (i + 1) + '</div><div class="text-[8px] text-[rgba(180,180,220,.15)]">' + (s.length || 0) + '字</div></div><span class="text-xs text-[rgba(200,200,230,.5)] flex-1">' + esc(s) + '</span>' + (summaryDeleteMode ? '<input type="checkbox" class="sumChk shrink-0 mt-0.5 accent-[rgba(200,80,80,.4)]" data-idx="' + i + '">' : '') + '</div>').join('');
 }
 
 // 游玩须知（空值保护：兼容旧版HTML）
@@ -145,24 +149,27 @@ if (guideBtn) { guideBtn.addEventListener('click', () => showModal(guideOverlay,
 if (closeTlEdit) { closeTlEdit.addEventListener('click', () => hideModal(tlEditOverlay, tlEditModal)); tlEditOverlay.addEventListener('click', () => hideModal(tlEditOverlay, tlEditModal)); saveTlEdit.addEventListener('click', () => saveTimeLocationInline()); }
 
 // 世界书
-function showWorldBookStructured() {
-  worldBookStructured.classList.remove('hidden'); worldBookContent.classList.add('hidden');
-  worldBookStructured.innerHTML = renderWorldBookSections(data.worldBook || defaultWorldBook());
-  worldBookContent.readOnly = true; worldBookSaveRow.classList.add('hidden'); worldBookEditBtn.textContent = '✏️ 编辑';
-}
-function showWorldBookEdit() {
-  worldBookStructured.classList.add('hidden'); worldBookContent.classList.remove('hidden');
-  worldBookContent.value = data.worldBook || defaultWorldBook(); worldBookContent.readOnly = false;
-  worldBookSaveRow.classList.remove('hidden'); worldBookEditBtn.textContent = '🔒 取消编辑';
-}
+const addWbSectionBtn = $('addWbSectionBtn');
+const importWbBtn = $('importWbBtn');
+function refreshWbView() { wbEditIdx = -1; worldBookStructured.innerHTML = renderWorldBookSections(getWbArr()); }
 if (worldBookBtn) {
-  worldBookBtn.addEventListener('click', () => { showWorldBookStructured(); showModal(worldBookOverlay, worldBookModal); });
+  worldBookBtn.addEventListener('click', () => { refreshWbView(); showModal(worldBookOverlay, worldBookModal); });
   closeWorldBook.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   worldBookOverlay.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
-  worldBookEditBtn.addEventListener('click', () => { if (worldBookContent.classList.contains('hidden')) { showWorldBookEdit(); } else { showWorldBookStructured(); } });
-  worldBookCopyBtn.addEventListener('click', () => { const txt = worldBookContent.classList.contains('hidden') ? (data.worldBook || defaultWorldBook()) : worldBookContent.value; navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
-  saveWorldBookBtn.addEventListener('click', () => { data.worldBook = worldBookContent.value; saveAll(); showWorldBookStructured(); hideModal(worldBookOverlay, worldBookModal); showToast('世界书已保存'); });
-  resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = defaultWorldBook(); worldBookContent.value = data.worldBook; saveAll(); showWorldBookStructured(); }); });
+  worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || parseWorldBookSections(defaultWorldBook())); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
+  resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = parseWorldBookSections(defaultWorldBook()); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
+  if (addWbSectionBtn) addWbSectionBtn.addEventListener('click', () => {
+    const name = prompt('请输入新章节标题：'); if (!name || !name.trim()) return;
+    if (!confirm('确认新增章节「' + name.trim() + '」？')) return;
+    data.worldBook.push({ heading: name.trim(), content: '（内容待编辑）' });
+    saveAll(); refreshWbView(); showToast('✓ 章节已新增');
+  });
+  if (importWbBtn) importWbBtn.addEventListener('click', () => {
+    showSimpleConfirm('将用内嵌 Worldbook 数据覆盖当前所有章节，确认导入？', () => {
+      data.worldBook = JSON.parse(JSON.stringify(WB_DEFAULT));
+      saveAll(); refreshWbView(); showToast('✓ 世界书已导入（' + data.worldBook.length + '章节）');
+    });
+  });
 }
 
 init();

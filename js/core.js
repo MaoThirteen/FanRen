@@ -7,10 +7,11 @@ function enforceMsgLimit() { const m = data.chatHistory || []; if (m.length > MA
 
 function buildPrompt(u) {
   const cfg = getConfig();
-  const realmTable = '【境界-数据对照表（强制使用，违反则状态无效）】\n' + REALM_ORDER.map(r => { const d = REALM_HPMP[r] || {}; return r + ' → expMax:' + calcExpMax(r) + ' hpMax:' + (d.hpMax||'?') + ' mpMax:' + (d.mpMax||'?'); }).join('\n');
+  const realmTable = '一、【境界-数据对照表】\n' + REALM_ORDER.map(r => { const d = REALM_HPMP[r] || {}; return r + ' → expMax:' + calcExpMax(r) + ' hpMax:' + (d.hpMax||'?') + ' mpMax:' + (d.mpMax||'?'); }).join('\n');
   const bioLocked = cfg.bioLocked || {};
   const bioLockNote = Object.keys(bioLocked).length ? '\n【角色生平锁状态】以下角色生平已锁定，只可读取不可修改：' + Object.keys(bioLocked).filter(k => bioLocked[k]).join('、') : '';
-  const fixed = realmTable + '\n\n【最高优先级指令】请严格遵循下方世界书中"一、"到"五、"的全部规则。realm必须从上方对照表中选取，expMax/hpMax/mpMax必须严格等于对照表数值。允许受伤/法力亏空/修为瓶颈。\n\nTemperature: ' + cfg.temperature + ' | TopP: ' + cfg.topP + ' | 重复惩罚: ' + cfg.penalty + '\n\n' + (data.worldBook || defaultWorldBook()) + bioLockNote;
+  const wbText = Array.isArray(data.worldBook) ? wbString(data.worldBook) : (data.worldBook || defaultWorldBook());
+  const fixed = '【最高优先级指令】遵循下方世界书的全部规则。\n\n' + realmTable + '\n\n' + wbText + bioLockNote + '\n\nTemperature: ' + cfg.temperature + ' | TopP: ' + cfg.topP + ' | 重复惩罚: ' + cfg.penalty;
   const ctx = cfg.contextRounds || 10, slimit = cfg.summaryLimit || 50;
   const st = JSON.stringify(getState(), null, 2), ch = data.chatHistory || [], su = data.summaries || [];
   const rc = ch.slice(-ctx * 2); let rl = []; rc.forEach(m => { if (m.role === 'user') rl.push('玩家：' + m.content); else rl.push('AI：' + (m.content || '')); }); const rs = rl.length ? '\n\n【最近对话】\n' + rl.join('\n') : '';
@@ -178,7 +179,7 @@ async function summarizeSummaries(rounds) {
   let sumSec = 0; const sumTimer = setInterval(() => { sumSec++; toastEl.textContent = '⏳ 正在总结 ' + su.length + ' 轮摘要… ' + sumSec + '秒'; }, 1000);
   function dismissSumToast(msg) { clearInterval(sumTimer); toastEl.textContent = msg; setTimeout(() => { toastEl.style.opacity = '0'; }, 3000); }
   try {
-    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数应在800~1000字之间，允许小幅偏差但不得过大或过小。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
+    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数1200字以内，尽可能压缩。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
     const r = await fetch(base + '/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },

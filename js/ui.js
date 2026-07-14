@@ -17,6 +17,7 @@ const cleanupBtn = $('cleanupBtn'), resetDataBtn = $('resetDataBtn'), rawToggle 
 const summaryBtn = $('summaryBtn'), summaryOverlay = $('summaryOverlay'), summaryModal = $('summaryModal'), summaryList = $('summaryList'), closeSummary = $('closeSummary');
 const summaryDelModeBtn = $('summaryDelModeBtn'), summaryDelTools = $('summaryDelTools'), summarySelectAll = $('summarySelectAll'), summaryDeleteSelected = $('summaryDeleteSelected');
 const summarizeBtn = $('summarizeBtn');
+const addSummaryBtn = $('addSummaryBtn');
 const summaryPromptBtn = $('summaryPromptBtn'), summaryPromptArea = $('summaryPromptArea'), summaryPromptContent = $('summaryPromptContent');
 const autoSummarizeToggle = $('autoSummarizeToggle'), autoSumEvery = $('autoSumEvery'), autoSumRounds = $('autoSumRounds');
 const logBtn = $('logBtn'), logOverlay = $('logOverlay'), logModal = $('logModal'), logList = $('logList'), closeLog = $('closeLog'), clearLogBtn = $('clearLogBtn');
@@ -28,7 +29,7 @@ const charGender = $('charGender'), charGoal = $('charGoal'), editGoalLabel = $(
 const charSectToggle = $('charSectToggle'), charSectName = $('charSectName'), charSectTitle = $('charSectTitle'), charSectFields = $('charSectFields');
 const charStatusField = $('charStatusField'), charRelationField = $('charRelationField');
 const charEditIdx = $('charEditIdx'), charEditSrc = $('charEditSrc'), charTypeRow = $('charTypeRow'), charStatusRow = $('charStatusRow'), charRelationRow = $('charRelationRow');
-const charTimeRow = $('charTimeRow'), charTimeTime = $('charTimeTime'), charTimeLoc = $('charTimeLoc'), charTimeDetail = $('charTimeDetail'), charTimeDay = $('charTimeDay'), charBio = $('charBio'), charBioLock = $('charBioLock'), charSpecies = $('charSpecies');
+const charTimeRow = $('charTimeRow'), charTimeTime = $('charTimeTime'), charTimeLoc = $('charTimeLoc'), charTimeDetail = $('charTimeDetail'), charBio = $('charBio'), charBioLock = $('charBioLock'), charSpecies = $('charSpecies');
 const exportImportBtn = $('exportImportBtn'), exportImportOverlay = $('exportImportOverlay'), exportImportModal = $('exportImportModal'), closeExportImport = $('closeExportImport');
 const doExportBtn = $('doExportBtn'), doImportBtn = $('doImportBtn'), importFileInput = $('importFileInput');
 const confirmOverlay = $('confirmOverlay'), confirmModal = $('confirmModal'), confirmTitle = $('confirmTitle'), confirmMsg = $('confirmMsg');
@@ -43,8 +44,8 @@ const guideBtn = $('guideBtn'), guideOverlay = $('guideOverlay'), guideModal = $
 const tlEditOverlay = $('tlEditOverlay'), tlEditModal = $('tlEditModal'), closeTlEdit = $('closeTlEdit'), saveTlEdit = $('saveTlEdit');
 const tlModalTime = $('tlModalTime'), tlModalLoc = $('tlModalLoc'), tlModalDetail = $('tlModalDetail'), tlModalDay = $('tlModalDay');
 const worldBookBtn = $('worldBookBtn'), worldBookOverlay = $('worldBookOverlay'), worldBookModal = $('worldBookModal'), closeWorldBook = $('closeWorldBook');
-const worldBookContent = $('worldBookContent'), saveWorldBookBtn = $('saveWorldBookBtn'), resetWorldBookBtn = $('resetWorldBookBtn');
-const worldBookEditBtn = $('worldBookEditBtn'), worldBookCopyBtn = $('worldBookCopyBtn'), worldBookSaveRow = $('worldBookSaveRow'), worldBookStructured = $('worldBookStructured');
+const worldBookContent = $('worldBookContent'), resetWorldBookBtn = $('resetWorldBookBtn');
+const worldBookCopyBtn = $('worldBookCopyBtn'), worldBookStructured = $('worldBookStructured');
 
 /* ---- 全局状态 ---- */
 let deleteMode = false, summaryDeleteMode = false, confirmTimer = null, lt = null;
@@ -83,7 +84,8 @@ function renderItemLine(item, type) {
   const st = item.status ? '<span class="text-[9px] px-1.5 rounded-full bg-[rgba(180,120,40,.12)] border border-[rgba(180,120,40,.15)] text-[rgba(220,180,120,.55)]">' + esc(item.status) + '</span> ' : '';
   const catClr = (c) => CATEGORY_COLORS[c] || '#888';
   const cats = (type === 'artifact' && item.categories?.length) ? '<span class="inline-flex flex-wrap gap-0.5">' + item.categories.map(c => '<span class="text-[8px] px-1 rounded-full" style="background:' + catClr(c) + '20;border:1px solid ' + catClr(c) + '50;color:' + catClr(c) + '">' + esc(c) + '</span>').join('') + '</span> ' : '';
-  return '<div class="rounded-lg px-2 py-1 cursor-pointer text-xs border border-transparent hover:border-[rgba(160,120,60,.1)]" onclick="this.querySelector(\'.ib\').classList.toggle(\'open\');this.querySelector(\'.ixp\').classList.toggle(\'rotate-180\')"><span class="text-[rgba(255,255,255,.6)]">' + esc(item.name) + '</span> ' + cats + st + gradeTag(g) + '<span class="ixp float-right text-[20px] text-[rgba(220,200,160,.45)]" style="display:inline-block">▾</span><div class="ib artifact-body text-[10px] text-[rgba(220,200,160,.35)] pl-1">' + esc(item.desc || '') + '</div></div>';
+  const ftTag = (type === 'formation' && item.formType) ? '<span class="text-[8px] px-1 rounded-full" style="background:' + (FORMATION_TYPE_COLORS[item.formType]||'#888') + '30;border:1px solid ' + (FORMATION_TYPE_COLORS[item.formType]||'#888') + '60;color:' + (FORMATION_TYPE_COLORS[item.formType]||'#888') + '">' + esc(item.formType) + '</span> ' : '';
+  return '<div class="rounded-lg px-2 py-1 cursor-pointer text-xs border border-transparent hover:border-[rgba(160,120,60,.1)]" onclick="this.querySelector(\'.ib\').classList.toggle(\'open\');this.querySelector(\'.ixp\').classList.toggle(\'rotate-180\')"><span class="text-[rgba(255,255,255,.6)]">' + esc(item.name) + '</span> ' + ftTag + cats + st + gradeTag(g) + '<span class="ixp float-right text-[20px] text-[rgba(220,200,160,.45)]" style="display:inline-block">▾</span><div class="ib artifact-body text-[10px] text-[rgba(220,200,160,.35)] pl-1">' + esc(item.desc || '') + '</div></div>';
 }
 
 function renderCharCard(c, o) {
@@ -109,14 +111,14 @@ function renderCharCard(c, o) {
     + bar('', c.hp || 0, c.hpMax || 100, 'from-[#d06060] to-[#b04040]')
     + '<div class="text-xs text-[rgba(255,255,255,.5)]">法力：' + (c.mp || 0) + '/' + (c.mpMax || 50) + '（' + getMpStage(mP) + '）</div>'
     + bar('', c.mp || 0, c.mpMax || 50, 'from-[#4a7aff] to-[#3060d0]')
-    + collapsibleBlock('法器', c.artifacts?.length, aH) + collapsibleBlock('功法', c.skills?.length, sH) + collapsibleBlock('符箓/阵盘', c.formations?.length, fH)
+    + collapsibleBlock('法器', c.artifacts?.length, aH) + collapsibleBlock('功法', c.skills?.length, sH) + collapsibleBlock('符箓/灵兽/阵法', c.formations?.length, fH)
     + collapsibleBlock('背包', c.inventory?.length, '<div class="text-xs text-[rgba(255,255,255,.5)] leading-relaxed">' + iH + '</div>')
     + '<div class="text-xs font-semibold text-[#e8c860]">灵石：' + (c.spiritStones || 0) + '</div>'
     + (c.bio ? collapsibleBlock('生平' + (deleteMode ? ' <span class="text-[10px] cursor-pointer" onclick="event.stopPropagation();toggleBioLock(\'' + esc(c.name) + '\')">' + ((getConfig().bioLocked||{})[c.name] ? '🔒' : '🔓') + '</span>' : ''), undefined, '<div class="text-xs text-[rgba(220,180,100,.5)] leading-relaxed">' + esc(c.bio) + '</div>') : '')
     + '<div class="text-xs text-[rgba(255,255,255,.4)]">身体/行动：' + esc(c.status || c.tag || '') + '</div>';
   const foldHtml = hasFold
     ? '<div class="comp-collapse-btn flex items-center justify-between px-3 py-2 rounded-xl bg-[rgba(30,24,20,.3)] border border-[rgba(160,120,60,.08)] cursor-pointer" onclick="document.getElementById(\'' + clpsId + '\').classList.toggle(\'hidden\');this.querySelector(\'.fld\').classList.toggle(\'rotate-90\')"><div class="flex items-center gap-2"><span class="text-base font-bold tracking-[2px] ' + nCol + '">' + esc(c.name) + '</span>' + relTag + '</div><span class="fld text-[rgba(220,200,160,.55)] transition-transform" style="display:inline-block;font-size:22px">▸</span></div><div id="' + clpsId + '" class="hidden rounded-xl px-3 py-3 bg-[rgba(30,24,20,.3)] border border-[rgba(160,120,60,.08)] space-y-1.5">' + body + '</div>'
-    : '<div class="rounded-xl px-3 py-3 bg-[rgba(30,24,20,.3)] border border-[rgba(160,120,60,.08)] space-y-1.5">' + (st ? '<div class="text-sm tracking-[1px] text-[rgba(255,255,255,.5)]">' + esc(tl.time) + (tl.location ? '·' + esc(tl.location) : '') + (tl.detail ? '·' + esc(tl.detail) : '') + (tl.day ? '·' + esc(tl.day) : '') + '</div>' : '') + '<div class="text-base font-bold tracking-[2px] ' + nCol + '">' + esc(c.name) + '</div>' + body + '</div>';
+    : '<div class="rounded-xl px-3 py-3 bg-[rgba(30,24,20,.3)] border border-[rgba(160,120,60,.08)] space-y-1.5">' + (st ? '<div class="text-sm tracking-[1px] text-[rgba(255,255,255,.5)]">' + esc(tl.time) + (tl.location ? '·' + esc(tl.location) : '') + (tl.detail ? '·' + esc(tl.detail) : '') + '</div>' : '') + '<div class="text-base font-bold tracking-[2px] ' + nCol + '">' + esc(c.name) + '</div>' + body + '</div>';
   return foldHtml;
 }
 
@@ -126,14 +128,14 @@ function renderSidebar() {
   const s = getState(), f = getConfig().sidebarFold;
   const tl = getState().timeLocation;
   // 编辑模式下，时间地点末尾出现编辑按钮
-  const tlText = esc(tl.time) + (tl.location ? '·' + esc(tl.location) : '') + (tl.detail ? '·' + esc(tl.detail) : '') + (tl.day ? '·' + esc(tl.day) : '');
+  const tlText = esc(tl.time) + (tl.location ? '·' + esc(tl.location) : '') + (tl.detail ? '·' + esc(tl.detail) : '');
   tlDisplay.innerHTML = '<div class="flex items-center justify-between gap-2"><span class="flex-1">' + tlText + '</span>' + (deleteMode ? '<button onclick="openTlEditModal()" class="px-2 py-0.5 rounded text-[10px] bg-[rgba(160,120,60,.2)] text-[rgba(220,200,160,.7)] hover:bg-[rgba(160,120,60,.3)] transition shrink-0">✎ 编辑</button>' : '') + '</div>';
   sidebarModules.innerHTML = MODULE_DEFS.map(d => { const o = !f[d.key]; return '<div class="module-item ' + (o ? 'module-open' : '') + '"><div class="module-header flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer bg-[rgba(30,24,20,.4)] border border-[rgba(160,120,60,.08)] hover:border-[rgba(160,120,60,.15)] transition" data-key="' + d.key + '"><div class="flex items-center gap-2.5"><span class="text-[rgba(220,200,160,.4)] text-xs">' + d.icon + '</span><span class="text-xs tracking-[2px] text-[rgba(255,255,255,.6)]">' + d.label + '</span><span class="text-[10px] text-[rgba(220,200,160,.3)]" id="sbBadge_' + d.key + '"></span></div><span class="module-arrow text-[rgba(220,200,160,.6)]" style="display:inline-block;font-size:22px">▾</span></div><div class="module-body px-3 pt-3 pb-2 space-y-2 ' + (o ? '' : 'hidden') + '" id="sbBody_' + d.key + '"></div></div>'; }).join('');
   sidebarModules.querySelectorAll('.module-header').forEach(el => { el.addEventListener('click', () => { const k = el.dataset.key; getConfig().sidebarFold[k] = !getConfig().sidebarFold[k]; saveAll(); renderSidebar(); }); });
   renderProtagonist(); renderCompanions(); renderTempChars();
 }
-function openTlEditModal() { const tl = getState().timeLocation; tlModalTime.value = tl.time || ''; tlModalLoc.value = tl.location || ''; tlModalDetail.value = tl.detail || ''; tlModalDay.value = tl.day || ''; showModal(tlEditOverlay, tlEditModal); }
-function saveTimeLocationInline() { getState().timeLocation = { time:tlModalTime.value.trim(), location:tlModalLoc.value.trim(), detail:tlModalDetail.value.trim(), day:tlModalDay.value.trim() }; saveAll(); renderSidebar(); hideModal(tlEditOverlay, tlEditModal); showToast('时间地点已更新'); }
+function openTlEditModal() { const tl = getState().timeLocation; tlModalTime.value = tl.time || ''; tlModalLoc.value = tl.location || ''; tlModalDetail.value = tl.detail || ''; showModal(tlEditOverlay, tlEditModal); }
+function saveTimeLocationInline() { getState().timeLocation = { time:tlModalTime.value.trim(), location:tlModalLoc.value.trim(), detail:tlModalDetail.value.trim() }; saveAll(); renderSidebar(); hideModal(tlEditOverlay, tlEditModal); showToast('时间地点已更新'); }
 
 function editBtns(type, i) { return deleteMode ? '<div class="absolute top-2 right-2 flex gap-1"><button class="px-2 py-0.5 rounded text-[10px] bg-[rgba(160,120,60,.2)] text-[rgba(220,200,160,.55)] hover:bg-[rgba(160,120,60,.35)] transition" onclick="event.stopPropagation();openEditModal(\'' + type + '\',' + i + ')">编辑</button><button class="px-2 py-0.5 rounded text-[10px] bg-[rgba(200,60,60,.25)] text-[rgba(240,200,200,.6)] hover:bg-[rgba(200,60,60,.4)] transition" onclick="event.stopPropagation();showDeleteConfirm(\'' + type + '\',' + i + ')">删除</button></div>' : ''; }
 function renderProtagonist() { const s = getState().protagonist, b = $('sbBody_protagonist'), badge = $('sbBadge_protagonist'); const p = s.expMax > 0 ? Math.round(s.exp / s.expMax * 100) : 0; badge.textContent = s.realm + ' ' + p + '%'; b.innerHTML = '<div class="relative">' + renderCharCard(s, { timeLocation:false, protagonist:true }) + editBtns('protagonist', -1) + '</div>'; }
@@ -189,14 +191,15 @@ function addSkillRowUI(v) {
   charSkillList.appendChild(d);
 }
 
-/* 符箓/阵盘行：支持拖拽排序 + 名称/品阶/状态 第一行，备注第二行 */
+/* 符箓/灵兽/阵盘行：支持拖拽排序 + 类型/名称/品阶/状态 第一行，备注第二行 */
 function addFormationRowUI(v) {
   const d = document.createElement('div');
   d.className = 'formation-row';
   d.draggable = true;
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
-    + '<input placeholder="名称" class="flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
+    + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_TYPES.map(t => '<option value="' + t + '"' + (v?.formType === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
+    + '<input placeholder="名称" class="flex-[2_1_0%] rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
@@ -230,19 +233,23 @@ function collectCharItems(c, g, type) {
   const cls = type === 'artifact' ? '.artifact-row' : (type === 'formation' ? '.formation-row' : '.skill-row');
   const defStatus = type === 'artifact' ? '完好无缺' : (type === 'formation' ? '完好' : '可用');
   c.querySelectorAll(cls).forEach(row => {
-    const inputs = row.querySelectorAll('input:not(.art-cat-chk)'), sel = row.querySelector('select');
+    const inputs = row.querySelectorAll('input:not(.art-cat-chk)'), sels = row.querySelectorAll('select');
     const catChks = row.querySelectorAll('.art-cat-chk');
     if (!inputs.length) return;
-    const name = inputs[0]?.value.trim();
-    if (!name) return;
-    const status = inputs[1]?.value.trim() || defStatus;
-    const desc = inputs[2]?.value.trim() || '功能未知';
-    const item = { name, grade: sel?.value || g[g.length - 1], status, desc };
-    if (type === 'artifact' && catChks.length) {
-      const cats = []; catChks.forEach(cb => { if (cb.checked) cats.push(cb.value); });
-      if (cats.length) item.categories = cats;
+    if (type === 'formation') {
+      const formType = sels[0]?.value || '符箓';
+      const name = inputs[0]?.value.trim(); if (!name) return;
+      const status = inputs[1]?.value.trim() || defStatus;
+      const desc = inputs[2]?.value.trim() || '功能未知';
+      items.push({ name, grade: sels[1]?.value || g[g.length - 1], formType, status, desc });
+    } else {
+      const name = inputs[0]?.value.trim(); if (!name) return;
+      const status = inputs[1]?.value.trim() || defStatus;
+      const desc = inputs[2]?.value.trim() || '功能未知';
+      const item = { name, grade: sels[0]?.value || g[g.length - 1], status, desc };
+      if (type === 'artifact' && catChks.length) { const cats = []; catChks.forEach(cb => { if (cb.checked) cats.push(cb.value); }); if (cats.length) item.categories = cats; }
+      items.push(item);
     }
-    items.push(item);
   });
   return items;
 }
@@ -261,7 +268,7 @@ function openEditModal(type, idx) {
   charGender.value = c.gender || '男'; charSpecies.value = c.species || '人类';
   if (charBio) charBio.value = c.bio || '';
   if (charBioLock) charBioLock.checked = !!(getConfig().bioLocked || {})[c.name];
-  if (type === 'protagonist') { const tl = getState().timeLocation; charTimeTime.value = tl.time || ''; charTimeLoc.value = tl.location || ''; charTimeDetail.value = tl.detail || ''; charTimeDay.value = tl.day || ''; }
+  if (type === 'protagonist') { const tl = getState().timeLocation; charTimeTime.value = tl.time || ''; charTimeLoc.value = tl.location || ''; charTimeDetail.value = tl.detail || ''; }
   charSectToggle.value = c.sect && c.sect !== '无' ? 'yes' : 'no'; charSectName.value = c.sect && c.sect !== '无' ? c.sect : ''; charSectTitle.value = c.sectTitle || ''; charSectFields.style.display = charSectToggle.value === 'yes' ? 'flex' : 'none';
   charStoneInput.value = c.spiritStones || 0; charInvInput.value = c.inventory?.length ? c.inventory.map(i => renderInvItem(i)).join(', ') : '';
   charArtifactList.innerHTML = ''; charSkillList.innerHTML = ''; charFormationList.innerHTML = '';
@@ -274,16 +281,44 @@ function openEditModal(type, idx) {
 function closeCE() { hideModal(charEditOverlay, charEditModal); }
 function toggleBioLock(name) { const bl = getConfig().bioLocked || {}; bl[name] = !bl[name]; getConfig().bioLocked = bl; saveAll(); renderSidebar(); }
 
-/* 世界书折叠渲染 */
-function renderWorldBookSections(text) {
-  const sections = text.split(/(?=[一二三四五六七八九]、)/);
+/* 世界书：数组→字符串 */
+function rebuildWorldBook(sections) { return sections.map(s => s.heading + '\n' + s.content).join('\n\n'); }
+
+/* 世界书每节独立渲染 + 编辑功能 */
+let wbEditIdx = -1;
+function getWbArr() { return data.worldBook || parseWorldBookSections(defaultWorldBook()); }
+
+function renderWorldBookSections(arr) {
+  const sections = Array.isArray(arr) ? arr : parseWorldBookSections(arr);
   let html = '';
   sections.forEach((sec, i) => {
-    const id = 'wb_' + i; const trimmed = sec.trim();
-    if (!trimmed) return;
-    const firstLine = trimmed.split('\n')[0];
-    const body = trimmed.slice(firstLine.length).trim();
-    html += '<div class="rounded-lg border border-[rgba(160,120,60,.08)] overflow-hidden mb-2"><div class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-[rgba(160,120,60,.06)] transition" onclick="document.getElementById(\'' + id + '\').classList.toggle(\'hidden\');this.querySelector(\'.wbs-arrow\').classList.toggle(\'rotate-90\')"><span class="text-xs text-[rgba(255,255,255,.65)] font-medium">' + esc(firstLine) + '</span><span class="wbs-arrow text-[rgba(220,200,160,.5)] transition-transform" style="display:inline-block;font-size:16px">▸</span></div><div id="' + id + '" class="hidden px-3 pb-2"><pre class="text-[11px] text-[rgba(255,255,255,.5)] leading-relaxed whitespace-pre-wrap font-[\'PingFang_SC\',\'Microsoft_YaHei\']">' + esc(body) + '</pre></div></div>';
+    if (!sec || !sec.heading) return;
+    const isEditing = wbEditIdx === i;
+    html += '<div class="rounded-lg border border-[rgba(160,120,60,.08)] overflow-hidden mb-2">'
+      + '<div class="flex items-center justify-between px-3 py-2 cursor-pointer bg-[rgba(20,18,16,.4)] hover:bg-[rgba(160,120,60,.05)] transition" onclick="if(' + i + '!==wbEditIdx)document.getElementById(\'wbBody_' + i + '\').classList.toggle(\'hidden\')">'
+      + '<span class="text-xs text-[rgba(255,255,255,.65)] font-medium">' + esc(sec.heading) + '</span>'
+      + '<div class="flex gap-1" onclick="event.stopPropagation()">'
+      + (isEditing
+        ? '<button onclick="saveWbSec(' + i + ')" class="px-2 py-0.5 rounded text-[9px] bg-[rgba(180,140,60,.2)] text-[rgba(220,200,160,.6)] hover:bg-[rgba(180,140,60,.3)] transition">保存</button><button onclick="cancelWbEdit()" class="px-2 py-0.5 rounded text-[9px] bg-[rgba(180,80,60,.15)] text-[rgba(220,140,140,.5)] hover:bg-[rgba(200,60,60,.2)] transition">取消</button>'
+        : '<button onclick="editWbSec(' + i + ')" class="px-2 py-0.5 rounded text-[9px] bg-[rgba(160,120,60,.12)] text-[rgba(220,200,160,.42)] hover:bg-[rgba(160,120,60,.2)] transition">✏️</button><button onclick="deleteWbSec(' + i + ')" class="px-2 py-0.5 rounded text-[9px] bg-[rgba(200,60,60,.12)] text-[rgba(220,140,140,.4)] hover:bg-[rgba(200,60,60,.2)] transition">✕</button>')
+      + '</div></div>'
+      + (isEditing
+        ? '<textarea id="wbEdit_' + i + '" class="w-full p-2 text-[11px] bg-[rgba(30,24,18,.6)] text-[#f0e8d8] outline-none border-t border-[rgba(160,120,60,.08)] resize-y" rows="6">' + esc(sec.content || '') + '</textarea>'
+        : '<div id="wbBody_' + i + '" class="hidden px-3 pb-2 pt-1"><pre class="text-[11px] text-[rgba(255,255,255,.5)] leading-relaxed whitespace-pre-wrap font-[\'PingFang_SC\',\'Microsoft_YaHei\']">' + esc(sec.content || '（空）') + '</pre></div>')
+      + '</div>';
   });
   return html || '<div class="text-xs text-[rgba(220,200,160,.2)] text-center py-8">暂无内容</div>';
+}
+
+function editWbSec(i) { wbEditIdx = i; refreshWbView(); }
+function cancelWbEdit() { wbEditIdx = -1; refreshWbView(); }
+function saveWbSec(i) {
+  const ta = document.getElementById('wbEdit_' + i); if (!ta) return;
+  data.worldBook[i].content = ta.value.trim(); saveAll(); wbEditIdx = -1; refreshWbView(); showToast('✓ 章节已保存');
+}
+function deleteWbSec(i) {
+  const sec = data.worldBook[i];
+  if (!confirm('确认删除「' + sec.heading + '」？')) return;
+  if (data.worldBook.length <= 1) { showToast('至少保留一个章节'); return; }
+  data.worldBook.splice(i, 1); saveAll(); refreshWbView(); showToast('✓ 章节已删除');
 }
