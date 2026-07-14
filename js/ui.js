@@ -10,6 +10,8 @@ const chatArea = $('chatArea'), inputBox = $('inputBox'), sendBtn = $('sendBtn')
 const menuBtn = $('menuBtn'), sidebar = $('sidebar'), sidebarOverlay = $('sidebarOverlay'), closeSidebar = $('closeSidebar');
 const sidebarModules = $('sidebarModules'), delModeBtn = $('delModeBtn'), addCharSidebarBtn = $('addCharSidebarBtn');
 const tlDisplay = $('tlDisplay'), extraToggleBtn = $('extraToggleBtn'), extraPanel = $('extraPanel');
+const liveClock = $('liveClock'), historyList = $('historyList'), histCount = $('histCount');
+const histOverlay = $('histOverlay'), histModal = $('histModal'), closeHist = $('closeHist');
 const settingsBtn = $('settingsBtn'), settingsOverlay = $('settingsOverlay'), settingsModal = $('settingsModal'), closeSettings = $('closeSettings');
 const apiBase = $('apiBase'), apiBase2 = $('apiBase2'), apiModel = $('apiModel'), apiModel2 = $('apiModel2'), apiKey = $('apiKey'), apiKey2 = $('apiKey2'), simMode = $('simMode');
 const testMainApiBtn = $('testMainApiBtn'), testBackupApiBtn = $('testBackupApiBtn'), mainApiStatus = $('mainApiStatus'), backupApiStatus = $('backupApiStatus');
@@ -30,11 +32,12 @@ const charSectToggle = $('charSectToggle'), charSectName = $('charSectName'), ch
 const charStatusField = $('charStatusField'), charRelationField = $('charRelationField');
 const charEditIdx = $('charEditIdx'), charEditSrc = $('charEditSrc'), charTypeRow = $('charTypeRow'), charStatusRow = $('charStatusRow'), charRelationRow = $('charRelationRow');
 const charTimeRow = $('charTimeRow'), charTimeTime = $('charTimeTime'), charTimeLoc = $('charTimeLoc'), charTimeDetail = $('charTimeDetail'), charBio = $('charBio'), charBioLock = $('charBioLock'), charSpecies = $('charSpecies');
+const charAge = $('charAge'), charLifespan = $('charLifespan'), charExpVal = $('charExpVal'), charExpPct = $('charExpPct'), charExpMaxLabel = $('charExpMaxLabel');
+const charExpBarInner = $('charExpBarInner');
 const exportImportBtn = $('exportImportBtn'), exportImportOverlay = $('exportImportOverlay'), exportImportModal = $('exportImportModal'), closeExportImport = $('closeExportImport');
 const doExportBtn = $('doExportBtn'), doImportBtn = $('doImportBtn'), importFileInput = $('importFileInput');
 const confirmOverlay = $('confirmOverlay'), confirmModal = $('confirmModal'), confirmTitle = $('confirmTitle'), confirmMsg = $('confirmMsg');
 const confirmOkBtn = $('confirmOkBtn'), confirmCancelBtn = $('confirmCancelBtn');
-const paramBtn = $('paramBtn'), paramOverlay = $('paramOverlay'), paramModal = $('paramModal'), closeParam = $('closeParam');
 const tempSlider = $('tempSlider'), topPSlider = $('topPSlider'), penSlider = $('penSlider');
 const tempVal = $('tempVal'), topPVal = $('topPVal'), penVal = $('penVal');
 const ctxRoundsInput = $('ctxRoundsInput'), slimitInput = $('slimitInput');
@@ -127,9 +130,8 @@ const MODULE_DEFS = [{ key:'protagonist', icon:'◈', label:'主角状态' }, { 
 function renderSidebar() {
   const s = getState(), f = getConfig().sidebarFold;
   const tl = getState().timeLocation;
-  // 编辑模式下，时间地点末尾出现编辑按钮
   const tlText = esc(tl.time) + (tl.location ? '·' + esc(tl.location) : '') + (tl.detail ? '·' + esc(tl.detail) : '');
-  tlDisplay.innerHTML = '<div class="flex items-center justify-between gap-2"><span class="flex-1">' + tlText + '</span>' + (deleteMode ? '<button onclick="openTlEditModal()" class="px-2 py-0.5 rounded text-[10px] bg-[rgba(160,120,60,.2)] text-[rgba(220,200,160,.7)] hover:bg-[rgba(160,120,60,.3)] transition shrink-0">✎ 编辑</button>' : '') + '</div>';
+  tlDisplay.innerHTML = '<div class="flex items-center justify-between gap-2 cursor-pointer px-1 py-0.5 rounded hover:bg-[rgba(160,120,60,.06)] transition" onclick="document.getElementById(\'tlDetailArea\').classList.toggle(\'hidden\');this.querySelector(\'.tl-arrow\').classList.toggle(\'rotate-90\')"><div class="flex items-center gap-1 min-w-0"><span class="tl-arrow inline-block text-[rgba(220,200,160,.45)] text-xs transition-transform">▸</span><span class="text-xs text-[rgba(255,255,255,.55)] truncate">' + esc(tl.time) + '</span></div>' + (deleteMode ? '<button onclick="openTlEditModal()" class="px-2 py-0.5 rounded text-[10px] bg-[rgba(160,120,60,.2)] text-[rgba(220,200,160,.7)] hover:bg-[rgba(160,120,60,.3)] transition shrink-0">✎ 编辑</button>' : '') + '</div><div id="tlDetailArea" class="hidden mt-1 px-2 pb-1"><span class="text-xs text-[rgba(255,255,255,.45)]">' + tlText + '</span></div>';
   sidebarModules.innerHTML = MODULE_DEFS.map(d => { const o = !f[d.key]; return '<div class="module-item ' + (o ? 'module-open' : '') + '"><div class="module-header flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer bg-[rgba(30,24,20,.4)] border border-[rgba(160,120,60,.08)] hover:border-[rgba(160,120,60,.15)] transition" data-key="' + d.key + '"><div class="flex items-center gap-2.5"><span class="text-[rgba(220,200,160,.4)] text-xs">' + d.icon + '</span><span class="text-xs tracking-[2px] text-[rgba(255,255,255,.6)]">' + d.label + '</span><span class="text-[10px] text-[rgba(220,200,160,.3)]" id="sbBadge_' + d.key + '"></span></div><span class="module-arrow text-[rgba(220,200,160,.6)]" style="display:inline-block;font-size:22px">▾</span></div><div class="module-body px-3 pt-3 pb-2 space-y-2 ' + (o ? '' : 'hidden') + '" id="sbBody_' + d.key + '"></div></div>'; }).join('');
   sidebarModules.querySelectorAll('.module-header').forEach(el => { el.addEventListener('click', () => { const k = el.dataset.key; getConfig().sidebarFold[k] = !getConfig().sidebarFold[k]; saveAll(); renderSidebar(); }); });
   renderProtagonist(); renderCompanions(); renderTempChars();
@@ -163,13 +165,13 @@ function addArtifactRowUI(v) {
   const cats = v?.categories || [];
   d.innerHTML = '<div class="flex gap-1 items-center flex-wrap">'
     + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
-    + '<input placeholder="名称" class="flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
+    + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + ARTIFACT_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好无缺') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.artifact-row\').remove()">✕</button>'
     + '</div>'
     + '<div class="flex gap-2 mt-0.5">' + ARTIFACT_CATEGORIES.map(c => '<label class="text-[9px] text-[rgba(220,200,160,.35)] cursor-pointer"><input type="checkbox" class="art-cat-chk mr-0.5 accent-[rgba(160,200,240,.5)]" value="' + c + '"' + (cats.includes(c) ? ' checked' : '') + '>' + c + '</label>').join('') + '</div>'
-    + '<input placeholder="备注（样子、功能）" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<textarea placeholder="备注（样子、功能）" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
   attachDragEvents(d, charArtifactList, 'artifact-row');
   charArtifactList.appendChild(d);
 }
@@ -181,12 +183,12 @@ function addSkillRowUI(v) {
   d.draggable = true;
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
-    + '<input placeholder="名称" class="flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
+    + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + SKILL_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '可用') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.skill-row\').remove()">✕</button>'
     + '</div>'
-    + '<input placeholder="功能介绍" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<textarea placeholder="功能介绍" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
   attachDragEvents(d, charSkillList, 'skill-row');
   charSkillList.appendChild(d);
 }
@@ -199,12 +201,12 @@ function addFormationRowUI(v) {
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_TYPES.map(t => '<option value="' + t + '"' + (v?.formType === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
-    + '<input placeholder="名称" class="flex-[2_1_0%] rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
+    + '<input placeholder="名称" class="w-12 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'
-    + '<input placeholder="备注" maxlength="100" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.desc || '') + '">';
+    + '<textarea placeholder="备注" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
   attachDragEvents(d, charFormationList, 'formation-row');
   charFormationList.appendChild(d);
 }
@@ -266,6 +268,13 @@ function openEditModal(type, idx) {
   charNameInput.value = c.name || ''; charStatusField.value = c.status || ''; charRelationField.value = c.relation || '';
   charRealmSelect.innerHTML = '<option value="">--</option>' + buildRealmOptions(c.realm || ''); charRealmSelect.value = c.realm || '';
   charGender.value = c.gender || '男'; charSpecies.value = c.species || '人类';
+  if (charAge) charAge.value = c.age || '';
+  if (charLifespan) charLifespan.value = c.lifespan || getLifespan(c.realm || '');
+  const ex = c.exp || 0; const em = c.expMax || 1;
+  if (charExpVal) { charExpVal.value = ex; charExpVal.setAttribute('data-expmax', em); }
+  if (charExpPct) { charExpPct.value = Math.round(ex / em * 100); charExpPct.setAttribute('data-expmax', em); }
+  if (charExpMaxLabel) charExpMaxLabel.textContent = em;
+  if (charExpBarInner) charExpBarInner.style.width = Math.round(ex / em * 100) + '%';
   if (charBio) charBio.value = c.bio || '';
   if (charBioLock) charBioLock.checked = !!(getConfig().bioLocked || {})[c.name];
   if (type === 'protagonist') { const tl = getState().timeLocation; charTimeTime.value = tl.time || ''; charTimeLoc.value = tl.location || ''; charTimeDetail.value = tl.detail || ''; }
@@ -273,9 +282,19 @@ function openEditModal(type, idx) {
   charStoneInput.value = c.spiritStones || 0; charInvInput.value = c.inventory?.length ? c.inventory.map(i => renderInvItem(i)).join(', ') : '';
   charArtifactList.innerHTML = ''; charSkillList.innerHTML = ''; charFormationList.innerHTML = '';
   (c.artifacts || []).forEach(a => addArtifactRowUI(a)); (c.skills || []).forEach(a => addSkillRowUI(a)); (c.formations || []).forEach(a => addFormationRowUI(a));
+  // 自动展开有内容的栏目 + 更新计数
+  const ac = c.artifacts?.length || 0, sc = c.skills?.length || 0, fc = c.formations?.length || 0;
+  const aCount = document.getElementById('artifactEditCount'), sCount = document.getElementById('skillEditCount'), fCount = document.getElementById('formationEditCount');
+  if (aCount) aCount.textContent = '（' + ac + '）'; if (sCount) sCount.textContent = '（' + sc + '）'; if (fCount) fCount.textContent = '（' + fc + '）';
+  if (ac) { const ab = document.getElementById('artifactEditBody'); if (ab) ab.classList.remove('hidden'); }
+  if (sc) { const sb = document.getElementById('skillEditBody'); if (sb) sb.classList.remove('hidden'); }
+  if (fc) { const fb = document.getElementById('formationEditBody'); if (fb) fb.classList.remove('hidden'); }
   if (charGoal) { charGoal.value = c.goal || ''; charGoal.style.display = (type === 'protagonist') ? '' : 'none'; }
   if (editGoalLabel) editGoalLabel.style.display = (type === 'protagonist') ? '' : 'none';
-  charRealmSelect.onchange = function() { const rd = getRealmDefaults(this.value); charStoneInput.setAttribute('data-expmax', rd.expMax); charStoneInput.setAttribute('data-hpmax', rd.hpMax); charStoneInput.setAttribute('data-mpmax', rd.mpMax); };
+  charRealmSelect.onchange = function() { const rd = getRealmDefaults(this.value); const em = rd.expMax; if (charExpVal) charExpVal.setAttribute('data-expmax', em); if (charExpPct) charExpPct.setAttribute('data-expmax', em); if (charExpMaxLabel) charExpMaxLabel.textContent = em; if (charStoneInput) { charStoneInput.setAttribute('data-expmax', em); charStoneInput.setAttribute('data-hpmax', rd.hpMax); charStoneInput.setAttribute('data-mpmax', rd.mpMax); } updateExpBar(); };
+  if (charExpVal) charExpVal.oninput = function() { const em = parseInt(this.getAttribute('data-expmax')) || 1; const v = Math.min(parseInt(this.value) || 0, em); if (charExpPct) charExpPct.value = Math.round(v / em * 100); updateExpBar(); };
+  if (charExpPct) charExpPct.oninput = function() { const em = parseInt(this.getAttribute('data-expmax')) || 1; const p = Math.min(parseFloat(this.value) || 0, 100); if (charExpVal) charExpVal.value = Math.round(em * p / 100); updateExpBar(); };
+  function updateExpBar() { const em = charExpVal ? parseInt(charExpVal.getAttribute('data-expmax')) || 1 : 1; const ex = charExpVal ? parseInt(charExpVal.value) || 0 : 0; if (charExpBarInner) charExpBarInner.style.width = Math.round(Math.min(ex, em) / em * 100) + '%'; }
   showModal(charEditOverlay, charEditModal);
 }
 function closeCE() { hideModal(charEditOverlay, charEditModal); }
@@ -310,11 +329,12 @@ function renderWorldBookSections(arr) {
   return html || '<div class="text-xs text-[rgba(220,200,160,.2)] text-center py-8">暂无内容</div>';
 }
 
-function editWbSec(i) { wbEditIdx = i; refreshWbView(); }
-function cancelWbEdit() { wbEditIdx = -1; refreshWbView(); }
+function refreshWbView() { wbEditIdx = -1; worldBookStructured.innerHTML = renderWorldBookSections(getWbArr()); }
+function editWbSec(i) { wbEditIdx = i; worldBookStructured.innerHTML = renderWorldBookSections(getWbArr()); }
+function cancelWbEdit() { refreshWbView(); }
 function saveWbSec(i) {
   const ta = document.getElementById('wbEdit_' + i); if (!ta) return;
-  data.worldBook[i].content = ta.value.trim(); saveAll(); wbEditIdx = -1; refreshWbView(); showToast('✓ 章节已保存');
+  data.worldBook[i].content = ta.value.trim(); saveAll(); refreshWbView(); showToast('✓ 章节已保存');
 }
 function deleteWbSec(i) {
   const sec = data.worldBook[i];

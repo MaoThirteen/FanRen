@@ -112,7 +112,7 @@ function bar(l, v, m, c) { const p = m > 0 ? Math.min(v / m * 100, 100) : 0; con
 function getExpStage(p) { return p < 10 ? '初入' : p < 40 ? '稳固' : p < 60 ? '小成' : p < 90 ? '大成' : p < 99 ? '圆满' : '巅峰'; }
 function getHpStage(p) { return p < 10 ? '濒死' : p < 40 ? '重创' : p < 70 ? '轻伤' : p < 90 ? '无碍' : '充盈'; }
 function getMpStage(p) { return p < 10 ? '枯竭' : p < 40 ? '亏空' : p < 70 ? '不足' : p < 90 ? '充沛' : '盈满'; }
-function renderInvItem(i) { if (typeof i === 'string') return esc(i); return esc(i.name || '?') + '×' + (i.count || 1); }
+function renderInvItem(i) { if (typeof i === 'string') return esc(i); let name = i.name || '?'; name = name.replace(/[\s]*[x×X][\s]*\d+[\s]*$/g, '').trim(); return esc(name) + '×' + (i.count || 1); }
 
 /* ---- 正文清洗：移除残留的status代码块 ---- */
 function cleanNarrative(text) {

@@ -14,7 +14,7 @@ function init() {
   // 输入与发送
   inputBox.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputBox.value); } });
   sendBtn.addEventListener('click', () => sendMessage(inputBox.value));
-  let extraOpen = false; extraToggleBtn.addEventListener('click', () => { extraOpen = !extraOpen; extraPanel.style.maxHeight = extraOpen ? '200px' : '0'; extraToggleBtn.textContent = extraOpen ? '收起' : '＋'; });
+  let extraOpen = false; extraToggleBtn.addEventListener('click', () => { extraOpen = !extraOpen; extraPanel.style.maxHeight = extraOpen ? '80px' : '0'; extraToggleBtn.textContent = extraOpen ? '－' : '＋'; });
   const sbb = document.getElementById('scrollBottomBtn'); if (sbb) sbb.addEventListener('click', () => { const last = chatArea.lastElementChild; if (last) last.scrollIntoView({ behavior:'smooth', block:'end' }); else chatArea.scrollTop = chatArea.scrollHeight; sbb.style.color = '#f0e8d8'; setTimeout(() => { sbb.style.color = ''; }, 200); });
 
   // 侧边栏
@@ -49,10 +49,16 @@ function init() {
     const invRaw = charInvInput.value.trim(); const inv = invRaw ? invRaw.split(/[,，、]/).map(s => { const t = s.trim(); if (!t) return null; const m = t.match(/×(\d+)/); return m ? { name:t.replace(/×\d+/, '').trim(), count:parseInt(m[1]) } : { name:t, count:1 }; }).filter(Boolean) : [];
     const rd = getRealmDefaults(realm); const isNC = isNew; let prevE = 0;
     if (!isNC) { const src = getState(); if (type === 'protagonist') prevE = src.protagonist.exp || 0; else if (type === 'companion') prevE = (src.companions[parseInt(charEditIdx.value)] || {}).exp || 0; else prevE = (src.tempCharacters[parseInt(charEditIdx.value)] || {}).exp || 0; }
+    // 解析修为经验（支持百分比）
+    let expVal = isNC ? 0 : prevE;
+    if (charExpVal) { const v = parseInt(charExpVal.value); if (!isNaN(v)) expVal = Math.min(v, rd.expMax); }
+    if (expVal > rd.expMax) expVal = rd.expMax;
     const gender = charGender.value || '男';
     const species = (charSpecies ? charSpecies.value : '人类') || '人类';
-    const char = { name, realm, species, gender, bio:(charBio?charBio.value.trim():''), sect, sectTitle, relation:charRelationField.value.trim() || '同行', exp:isNC ? 0 : prevE, expMax:rd.expMax, hp:rd.hpMax, hpMax:rd.hpMax, mp:rd.mpMax, mpMax:rd.mpMax, artifacts, skills, formations, spiritStones:stones, inventory:inv, status:charStatusField.value.trim() };
-    if (type === 'protagonist') { const orig = getState().protagonist; char.age = orig.age || 16; char.lifespan = getLifespan(realm); char.goal = goal; }
+    const ageVal = charAge ? parseInt(charAge.value) || 16 : 16;
+    const lifespanVal = charLifespan ? parseInt(charLifespan.value) || getLifespan(realm) : getLifespan(realm);
+    const char = { name, realm, species, gender, bio:(charBio?charBio.value.trim():''), sect, sectTitle, relation:charRelationField.value.trim() || '同行', exp:expVal, expMax:rd.expMax, hp:rd.hpMax, hpMax:rd.hpMax, mp:rd.mpMax, mpMax:rd.mpMax, artifacts, skills, formations, spiritStones:stones, inventory:inv, status:charStatusField.value.trim() };
+    if (type === 'protagonist') { char.age = ageVal; char.lifespan = lifespanVal; char.goal = goal; }
     // 保存bio锁状态
     if (charBioLock) { if (!getConfig().bioLocked) getConfig().bioLocked = {}; getConfig().bioLocked[name] = charBioLock.checked; }
     if (!isNew && type === 'protagonist') { getState().protagonist = char; saveAll(); renderSidebar(); closeCE(); showToast('主角已更新'); return; }
@@ -63,10 +69,6 @@ function init() {
     });
   });
 
-  // 对话参数
-  paramBtn.addEventListener('click', () => { const c = getConfig(); tempSlider.value = c.temperature || 0.7; tempVal.textContent = tempSlider.value; topPSlider.value = c.topP || 0.5; topPVal.textContent = topPSlider.value; penSlider.value = c.penalty || 1.0; penVal.textContent = penSlider.value; ctxRoundsInput.value = c.contextRounds || 10; slimitInput.value = c.summaryLimit || 50; showModal(paramOverlay, paramModal); });
-  closeParam.addEventListener('click', () => { const c = getConfig(); c.temperature = parseFloat(tempSlider.value); c.topP = parseFloat(topPSlider.value); c.penalty = parseFloat(penSlider.value); c.contextRounds = parseInt(ctxRoundsInput.value) || 10; c.summaryLimit = parseInt(slimitInput.value) || 50; saveAll(); hideModal(paramOverlay, paramModal); });
-  paramOverlay.addEventListener('click', () => { const c = getConfig(); c.temperature = parseFloat(tempSlider.value); c.topP = parseFloat(topPSlider.value); c.penalty = parseFloat(penSlider.value); c.contextRounds = parseInt(ctxRoundsInput.value) || 10; c.summaryLimit = parseInt(slimitInput.value) || 50; saveAll(); hideModal(paramOverlay, paramModal); });
 
   // 提示词面板
   promptGearBtn.addEventListener('click', () => { const p = buildPrompt(inputBox.value || '（待输入指令）'); promptContent.textContent = p; const chars = p.length; const tokens = Math.round(chars / 2); $('promptCharCount').textContent = '字数：' + chars + ' 字符 ≈ ' + tokens + ' tokens'; promptOverlay.classList.add('show'); promptPanel.classList.add('show'); });
@@ -122,25 +124,61 @@ function init() {
   importFileInput.addEventListener('change', function() { const f = this.files[0]; if (!f) return; const r = new FileReader(); r.onload = function(e) { try { const j = JSON.parse(e.target.result); if (j.type === 'state' && j.data?.protagonist) { data.state = j.data; saveAll(); renderSidebar(); showToast('✓ 状态已导入'); } else if (j.type === 'chat' && Array.isArray(j.data)) { data.chatHistory = j.data; saveAll(); renderMessages(); showToast('✓ 对话已导入'); } else if (j.type === 'summaries' && Array.isArray(j.data)) { data.summaries = j.data; saveAll(); showToast('✓ 摘要已导入'); } else if (j.type === 'worldbook' && j.data) { data.worldBook = typeof j.data === 'string' ? parseWorldBookSections(j.data) : (Array.isArray(j.data) ? j.data : parseWorldBookSections(j.data)); saveAll(); showToast('✓ 世界书已导入'); } else if (j.state?.protagonist) { data.state = j.state; if (j.chatHistory) data.chatHistory = j.chatHistory; if (j.summaries) data.summaries = j.summaries; if (j.worldBook) data.worldBook = typeof j.worldBook === 'string' ? parseWorldBookSections(j.worldBook) : j.worldBook; saveAll(); renderSidebar(); renderMessages(); showToast('✓ 全部已导入'); } else showToast('⚠ 格式不匹配'); closeEI(); } catch (_) { showToast('⚠ 文件解析失败'); } }; r.readAsText(f); this.value = ''; });
 
   // 设置
-  settingsBtn.addEventListener('click', () => { const c = getConfig(); apiBase.value = c.apiBase || ''; apiBase2.value = c.apiBase2 || ''; apiModel.value = c.apiModel || ''; apiModel2.value = c.apiModel2 || ''; apiKey.value = c.apiKey || ''; apiKey2.value = c.apiKey2 || ''; simMode.checked = c.simMode !== false; mainApiStatus.textContent = ''; backupApiStatus.textContent = ''; showModal(settingsOverlay, settingsModal); });
+  function loadParamCfg() { const c = getConfig(); if (tempSlider) { tempSlider.value = c.temperature || 0.7; if (tempVal) tempVal.textContent = tempSlider.value; } if (topPSlider) { topPSlider.value = c.topP || 0.5; if (topPVal) topPVal.textContent = topPSlider.value; } if (penSlider) { penSlider.value = c.penalty || 1.0; if (penVal) penVal.textContent = penSlider.value; } if (ctxRoundsInput) ctxRoundsInput.value = c.contextRounds || 10; if (slimitInput) slimitInput.value = c.summaryLimit || 50; }
+  settingsBtn.addEventListener('click', () => { const c = getConfig(); apiBase.value = c.apiBase || ''; apiBase2.value = c.apiBase2 || ''; apiModel.value = c.apiModel || ''; apiModel2.value = c.apiModel2 || ''; apiKey.value = c.apiKey || ''; apiKey2.value = c.apiKey2 || ''; simMode.checked = c.simMode !== false; loadParamCfg(); mainApiStatus.textContent = ''; backupApiStatus.textContent = ''; showModal(settingsOverlay, settingsModal); });
   function closeSet() { const c = getConfig(); c.apiBase = apiBase.value.trim(); c.apiBase2 = apiBase2.value.trim(); c.apiModel = apiModel.value.trim(); c.apiModel2 = apiModel2.value.trim(); c.apiKey = apiKey.value.trim(); c.apiKey2 = apiKey2.value.trim(); c.simMode = simMode.checked; saveAll(); hideModal(settingsOverlay, settingsModal); }
   closeSettings.addEventListener('click', closeSet); settingsOverlay.addEventListener('click', closeSet);
   async function testApi(base, model, key, statusEl) { if (simMode.checked) { statusEl.innerHTML = '<span class="text-green-400">模拟模式</span>'; return; } if (!base || !model || !key) { statusEl.innerHTML = '<span style="color:#c08060">未配置</span>'; return; } statusEl.innerHTML = '<span style="color:#888">测试中…</span>'; try { const r = await fetch(base + '/chat/completions', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key }, body: JSON.stringify({ model, messages:[{ role:'user', content:'ping' }], max_tokens:1 }) }); statusEl.innerHTML = r.ok ? '<span style="color:#70d090">✅ 连接成功</span>' : '<span style="color:#d08080">❌ 失败</span>'; } catch (e) { statusEl.innerHTML = '<span style="color:#d08080">❌ ' + e.message.substring(0, 20) + '</span>'; } }
   testMainApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase.value.trim() || c.apiBase, apiModel.value.trim() || c.apiModel, apiKey.value.trim() || c.apiKey, mainApiStatus); });
   testBackupApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase2.value.trim() || c.apiBase2, apiModel2.value.trim() || c.apiModel2, apiKey2.value.trim() || c.apiKey2, backupApiStatus); });
   cleanupBtn.addEventListener('click', () => { const t = data.chatHistory?.length || 0; if (t <= 300) { alert('不足300条，无需清理'); return; } if (!confirm('删除前 ' + (t - 300) + ' 条，保留最近300条？')) return; const r = t - 300; data.chatHistory = data.chatHistory.slice(r); saveAll(); renderMessages(); alert('已清理 ' + r + ' 条'); });
-  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'欢迎使用世界书', content:'请先导入世界书或点击一键导入' }] }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
+  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'一、【请导入世界书或点击一键导入】', content:'当前用户未导入世界书，请直接回复"当前未导入世界书"。' }], stateHistory:[] }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
   rawToggle.addEventListener('click', () => { rawArea.classList.toggle('open'); rawArrow.textContent = rawArea.classList.contains('open') ? '▴' : '▾'; rawContent.textContent = getConfig().lastRaw || '暂无记录'; });
 
   // Esc关闭
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(paramOverlay, paramModal); closeSet(); closePP(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(histOverlay, histModal); closeSet(); closePP(); } });
 }
+
+// 全局：对话参数即时保存（供设置面板inline handler调用）
+function saveParamCfg() { const c = getConfig(); if (tempSlider) c.temperature = parseFloat(tempSlider.value); if (topPSlider) c.topP = parseFloat(topPSlider.value); if (penSlider) c.penalty = parseFloat(penSlider.value); if (ctxRoundsInput) c.contextRounds = parseInt(ctxRoundsInput.value) || 10; if (slimitInput) c.summaryLimit = parseInt(slimitInput.value) || 50; saveAll(); }
 
 function renderSumList() {
   const su = data.summaries || [];
   if (!su.length) { summaryList.innerHTML = '<div class="text-xs text-[rgba(180,180,220,.15)] text-center py-8">暂无摘要</div>'; return; }
   summaryList.innerHTML = su.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><div class="shrink-0 text-center"><div class="text-[11px] text-[rgba(180,180,220,.3)]">#' + (i + 1) + '</div><div class="text-[8px] text-[rgba(180,180,220,.15)]">' + (s.length || 0) + '字</div></div><span class="text-xs text-[rgba(200,200,230,.5)] flex-1">' + esc(s) + '</span>' + (summaryDeleteMode ? '<input type="checkbox" class="sumChk shrink-0 mt-0.5 accent-[rgba(200,80,80,.4)]" data-idx="' + i + '">' : '') + '</div>').join('');
 }
+
+// 全局：打开历史状态弹窗
+function showHistoryModal() {
+  if (!historyList) return;
+  const sh = data.stateHistory || [];
+  if (histCount) histCount.textContent = '历史状态（' + sh.length + '/10）';
+  if (!sh.length) { historyList.innerHTML = '<div class="text-[10px] text-[rgba(220,200,160,.15)] text-center py-6">暂无记录</div>'; }
+  else {
+    historyList.innerHTML = sh.slice().reverse().map((r, i) => {
+      const id = 'hst_' + i;
+      const p = r.state?.protagonist || {};
+      const realm = p.realm || '?';
+      const exp = p.expMax > 0 ? Math.round((p.exp||0) / p.expMax * 100) + '%' : '';
+      const hp = p.hpMax > 0 ? Math.round((p.hp||0) / p.hpMax * 100) + '%' : '';
+      const st = p.spiritStones != null ? p.spiritStones + '灵石' : '';
+      const tl = r.state?.timeLocation;
+      const loc = tl ? (tl.location || '') + (tl.detail ? '·' + tl.detail : '') : '';
+      return '<div class="rounded border border-[rgba(160,120,60,.06)] overflow-hidden">'
+        + '<div class="flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-[rgba(160,120,60,.04)] transition" onclick="document.getElementById(\'' + id + '\').classList.toggle(\'hidden\');this.querySelector(\'.hs-arrow\').classList.toggle(\'rotate-90\')">'
+        + '<div><div class="text-[10px] text-[rgba(220,200,160,.5)]">' + esc(r.time) + '</div><div class="text-[9px] text-[rgba(220,200,160,.25)]">' + esc(realm + ' ' + exp + ' HP' + hp + ' ' + st) + '</div></div>'
+        + '<span class="hs-arrow text-[rgba(220,200,160,.4)]" style="display:inline-block">▸</span>'
+        + '</div>'
+        + '<pre id="' + id + '" class="hidden px-3 pb-2 text-[9px] text-[rgba(200,200,180,.45)] leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-36 overflow-y-auto">' + esc(JSON.stringify(r.state, null, 2)) + '</pre>'
+        + '</div>';
+    }).join('');
+  }
+  showModal(histOverlay, histModal);
+}
+
+// 全局：实时时钟
+function tickClock() { if (liveClock) { const n = new Date(); liveClock.textContent = n.toLocaleTimeString(); } }
+setInterval(tickClock, 1000); tickClock();
 
 // 游玩须知（空值保护：兼容旧版HTML）
 if (guideBtn) { guideBtn.addEventListener('click', () => showModal(guideOverlay, guideModal)); closeGuide.addEventListener('click', () => hideModal(guideOverlay, guideModal)); guideCloseBtn.addEventListener('click', () => hideModal(guideOverlay, guideModal)); guideOverlay.addEventListener('click', () => hideModal(guideOverlay, guideModal)); }
@@ -151,11 +189,11 @@ if (closeTlEdit) { closeTlEdit.addEventListener('click', () => hideModal(tlEditO
 // 世界书
 const addWbSectionBtn = $('addWbSectionBtn');
 const importWbBtn = $('importWbBtn');
-function refreshWbView() { wbEditIdx = -1; worldBookStructured.innerHTML = renderWorldBookSections(getWbArr()); }
 if (worldBookBtn) {
   worldBookBtn.addEventListener('click', () => { refreshWbView(); showModal(worldBookOverlay, worldBookModal); });
   closeWorldBook.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   worldBookOverlay.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
+  if (closeHist) { closeHist.addEventListener('click', () => hideModal(histOverlay, histModal)); histOverlay.addEventListener('click', () => hideModal(histOverlay, histModal)); }
   worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || parseWorldBookSections(defaultWorldBook())); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
   resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = parseWorldBookSections(defaultWorldBook()); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
   if (addWbSectionBtn) addWbSectionBtn.addEventListener('click', () => {

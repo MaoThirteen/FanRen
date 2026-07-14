@@ -85,8 +85,8 @@ function loadAll() {
 }
 
 data = loadAll();
-if (!data) { data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'欢迎使用世界书', content:'请先导入世界书或点击一键导入' }] }; saveAll(); }
-else { validateRealmStats(data.state); if (typeof data.worldBook === 'string') data.worldBook = parseWorldBookSections(data.worldBook); }
+if (!data) { data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'一、【请导入世界书或点击一键导入】', content:'当前用户未导入世界书，请直接回复"当前未导入世界书"。' }], stateHistory:[] }; saveAll(); }
+else { validateRealmStats(data.state); if (typeof data.worldBook === 'string') data.worldBook = parseWorldBookSections(data.worldBook); if (!Array.isArray(data.stateHistory)) data.stateHistory = []; }
 
 function saveAll() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {} }
 function getState() { return data.state; }

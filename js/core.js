@@ -7,11 +7,10 @@ function enforceMsgLimit() { const m = data.chatHistory || []; if (m.length > MA
 
 function buildPrompt(u) {
   const cfg = getConfig();
-  const realmTable = '一、【境界-数据对照表】\n' + REALM_ORDER.map(r => { const d = REALM_HPMP[r] || {}; return r + ' → expMax:' + calcExpMax(r) + ' hpMax:' + (d.hpMax||'?') + ' mpMax:' + (d.mpMax||'?'); }).join('\n');
   const bioLocked = cfg.bioLocked || {};
   const bioLockNote = Object.keys(bioLocked).length ? '\n【角色生平锁状态】以下角色生平已锁定，只可读取不可修改：' + Object.keys(bioLocked).filter(k => bioLocked[k]).join('、') : '';
   const wbText = Array.isArray(data.worldBook) ? wbString(data.worldBook) : (data.worldBook || defaultWorldBook());
-  const fixed = '【最高优先级指令】遵循下方世界书的全部规则。\n\n' + realmTable + '\n\n' + wbText + bioLockNote + '\n\nTemperature: ' + cfg.temperature + ' | TopP: ' + cfg.topP + ' | 重复惩罚: ' + cfg.penalty;
+  const fixed = '【最高优先级指令】遵循下方世界书的全部规则。\n\n' + wbText + bioLockNote + '\n\nTemperature: ' + cfg.temperature + ' | TopP: ' + cfg.topP + ' | 重复惩罚: ' + cfg.penalty;
   const ctx = cfg.contextRounds || 10, slimit = cfg.summaryLimit || 50;
   const st = JSON.stringify(getState(), null, 2), ch = data.chatHistory || [], su = data.summaries || [];
   const rc = ch.slice(-ctx * 2); let rl = []; rc.forEach(m => { if (m.role === 'user') rl.push('玩家：' + m.content); else rl.push('AI：' + (m.content || '')); }); const rs = rl.length ? '\n\n【最近对话】\n' + rl.join('\n') : '';
@@ -71,6 +70,11 @@ function parseAndSaveStatus(rt) {
         if (p.roundSummary) { if (!data.summaries) data.summaries = []; data.summaries.push(p.roundSummary); delete p.roundSummary; }
         if (p.timeLocation && p.timeLocation.time) data.state.timeLocation = p.timeLocation;
         data.state = p;
+        // 清洗 inventory name 中的数量后缀（AI可能把"丹药x12"写在name而非count）
+        const cleanInv = (arr) => arr && arr.forEach(it => { if (it.name) it.name = it.name.replace(/[\s]*[x×X][\s]*\d+[\s]*$/g, '').trim(); });
+        cleanInv(data.state.protagonist?.inventory);
+        (data.state.companions || []).forEach(c => cleanInv(c.inventory));
+        (data.state.tempCharacters || []).forEach(c => cleanInv(c.inventory));
         if (!data.state.companions || !Array.isArray(data.state.companions)) data.state.companions = getState().companions || [];
         if (!data.state.tempCharacters || !Array.isArray(data.state.tempCharacters)) data.state.tempCharacters = getState().tempCharacters || [];
         validateRealmStats(data.state);
@@ -89,6 +93,8 @@ async function sendMessage(u, isRegen) {
   isLoading = true; sendBtn.disabled = true; sendBtn.textContent = '发送中';
   lastUserInput = u;
   if (!isRegen) { if (!data.chatHistory) data.chatHistory = []; data.chatHistory.push({ role:'user', content:u }); enforceMsgLimit(); saveAll(); appendMsg('user', u); inputBox.value = ''; }
+  // 记录当前状态快照（最多10条，FIFO）
+  if (!isRegen) { if (!data.stateHistory) data.stateHistory = []; const ss = JSON.parse(JSON.stringify(data.state)); data.stateHistory.push({ time: new Date().toLocaleString(), state: ss }); if (data.stateHistory.length > 10) data.stateHistory.shift(); saveAll(); }
   createStreamBubble(); // 仅作为加载提示，不流式输出
   const cfg = getConfig();
   try {
