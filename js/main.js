@@ -156,6 +156,7 @@ function showHistoryModal() {
   if (!sh.length) { historyList.innerHTML = '<div class="text-[10px] text-[rgba(220,200,160,.15)] text-center py-6">暂无记录</div>'; }
   else {
     historyList.innerHTML = sh.slice().reverse().map((r, i) => {
+      const origIdx = sh.length - 1 - i;
       const id = 'hst_' + i;
       const p = r.state?.protagonist || {};
       const realm = p.realm || '?';
@@ -167,13 +168,26 @@ function showHistoryModal() {
       return '<div class="rounded border border-[rgba(160,120,60,.06)] overflow-hidden">'
         + '<div class="flex items-center justify-between px-3 py-1.5 cursor-pointer hover:bg-[rgba(160,120,60,.04)] transition" onclick="document.getElementById(\'' + id + '\').classList.toggle(\'hidden\');this.querySelector(\'.hs-arrow\').classList.toggle(\'rotate-90\')">'
         + '<div><div class="text-[10px] text-[rgba(220,200,160,.5)]">' + esc(r.time) + '</div><div class="text-[9px] text-[rgba(220,200,160,.25)]">' + esc(realm + ' ' + exp + ' HP' + hp + ' ' + st) + '</div></div>'
-        + '<span class="hs-arrow text-[rgba(220,200,160,.4)]" style="display:inline-block">▸</span>'
+        + '<div class="flex gap-1 items-center" onclick="event.stopPropagation()"><button onclick="restoreStateFromHistory(' + origIdx + ')" class="px-1.5 py-0.5 rounded text-[8px] bg-[rgba(180,140,60,.15)] text-[rgba(220,200,160,.5)] hover:bg-[rgba(180,140,60,.25)] transition">↩ 回溯</button><span class="hs-arrow text-[rgba(220,200,160,.4)]" style="display:inline-block">▸</span></div>'
         + '</div>'
         + '<pre id="' + id + '" class="hidden px-3 pb-2 text-[9px] text-[rgba(200,200,180,.45)] leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-36 overflow-y-auto">' + esc(JSON.stringify(r.state, null, 2)) + '</pre>'
         + '</div>';
     }).join('');
   }
   showModal(histOverlay, histModal);
+}
+
+// 全局：回溯到历史状态
+function restoreStateFromHistory(idx) {
+  const sh = data.stateHistory || [];
+  const entry = sh[idx];
+  if (!entry) { showToast('⚠ 记录不存在'); return; }
+  if (!confirm('确认回退状态到「' + entry.time + '」？当前进度可能丢失。')) return;
+  data.state = JSON.parse(JSON.stringify(entry.state));
+  saveAll(); renderSidebar();
+  hideModal(histOverlay, histModal);
+  showToast('✓ 状态已回溯至 ' + entry.time);
+  addLog('↩ 状态回溯 → ' + entry.time);
 }
 
 // 全局：实时时钟

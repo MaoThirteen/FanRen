@@ -69,7 +69,13 @@ function parseAndSaveStatus(rt) {
         (p.tempCharacters || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         if (p.roundSummary) { if (!data.summaries) data.summaries = []; data.summaries.push(p.roundSummary); delete p.roundSummary; }
         const prevTL = data.state.timeLocation;
+        const prevPro = data.state.protagonist;
         data.state = p;
+        // 主角字段兜底：AI可能省略artifacts/skills/formations/spiritStones/inventory
+        if (data.state.protagonist && prevPro) {
+          const fields = ['artifacts','skills','formations','spiritStones','inventory','sect','sectTitle','bio','goal','age','lifespan','species','gender'];
+          fields.forEach(f => { if (!(f in data.state.protagonist) && f in prevPro) data.state.protagonist[f] = prevPro[f]; });
+        }
         // 兼容AI返回字符串格式的timeLocation："时间·地点·细节（可含任意多·）"
         if (typeof data.state.timeLocation === 'string') {
           const parts = data.state.timeLocation.split('·').map(s => s.trim()).filter(Boolean);
