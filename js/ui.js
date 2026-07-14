@@ -236,18 +236,19 @@ function collectCharItems(c, g, type) {
   const defStatus = type === 'artifact' ? '完好无缺' : (type === 'formation' ? '完好' : '可用');
   c.querySelectorAll(cls).forEach(row => {
     const inputs = row.querySelectorAll('input:not(.art-cat-chk)'), sels = row.querySelectorAll('select');
+    const descEl = row.querySelector('textarea');
     const catChks = row.querySelectorAll('.art-cat-chk');
     if (!inputs.length) return;
     if (type === 'formation') {
       const formType = sels[0]?.value || '符箓';
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      const desc = inputs[2]?.value.trim() || '功能未知';
+      const desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
       items.push({ name, grade: sels[1]?.value || g[g.length - 1], formType, status, desc });
     } else {
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      const desc = inputs[2]?.value.trim() || '功能未知';
+      const desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
       const item = { name, grade: sels[0]?.value || g[g.length - 1], status, desc };
       if (type === 'artifact' && catChks.length) { const cats = []; catChks.forEach(cb => { if (cb.checked) cats.push(cb.value); }); if (cats.length) item.categories = cats; }
       items.push(item);
