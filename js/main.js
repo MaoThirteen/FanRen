@@ -124,7 +124,7 @@ function init() {
   importFileInput.addEventListener('change', function() { const f = this.files[0]; if (!f) return; const r = new FileReader(); r.onload = function(e) { try { const j = JSON.parse(e.target.result); if (j.type === 'state' && j.data?.protagonist) { data.state = j.data; saveAll(); renderSidebar(); showToast('✓ 状态已导入'); } else if (j.type === 'chat' && Array.isArray(j.data)) { data.chatHistory = j.data; saveAll(); renderMessages(); showToast('✓ 对话已导入'); } else if (j.type === 'summaries' && Array.isArray(j.data)) { data.summaries = j.data; saveAll(); showToast('✓ 摘要已导入'); } else if (j.type === 'worldbook' && j.data) { data.worldBook = typeof j.data === 'string' ? parseWorldBookSections(j.data) : (Array.isArray(j.data) ? j.data : parseWorldBookSections(j.data)); saveAll(); showToast('✓ 世界书已导入'); } else if (j.state?.protagonist) { data.state = j.state; if (j.chatHistory) data.chatHistory = j.chatHistory; if (j.summaries) data.summaries = j.summaries; if (j.worldBook) data.worldBook = typeof j.worldBook === 'string' ? parseWorldBookSections(j.worldBook) : j.worldBook; saveAll(); renderSidebar(); renderMessages(); showToast('✓ 全部已导入'); } else showToast('⚠ 格式不匹配'); closeEI(); } catch (_) { showToast('⚠ 文件解析失败'); } }; r.readAsText(f); this.value = ''; });
 
   // 设置
-  function loadParamCfg() { const c = getConfig(); if (tempSlider) { tempSlider.value = c.temperature || 0.7; if (tempVal) tempVal.textContent = tempSlider.value; } if (topPSlider) { topPSlider.value = c.topP || 0.5; if (topPVal) topPVal.textContent = topPSlider.value; } if (penSlider) { penSlider.value = c.penalty || 1.0; if (penVal) penVal.textContent = penSlider.value; } if (ctxRoundsInput) ctxRoundsInput.value = c.contextRounds || 10; if (slimitInput) slimitInput.value = c.summaryLimit || 50; }
+  function loadParamCfg() { const c = getConfig(); if (ctxRoundsInput) ctxRoundsInput.value = c.contextRounds || 10; if (slimitInput) slimitInput.value = c.summaryLimit || 50; }
   settingsBtn.addEventListener('click', () => { const c = getConfig(); apiBase.value = c.apiBase || ''; apiBase2.value = c.apiBase2 || ''; apiModel.value = c.apiModel || ''; apiModel2.value = c.apiModel2 || ''; apiKey.value = c.apiKey || ''; apiKey2.value = c.apiKey2 || ''; simMode.checked = c.simMode !== false; loadParamCfg(); mainApiStatus.textContent = ''; backupApiStatus.textContent = ''; showModal(settingsOverlay, settingsModal); });
   function closeSet() { const c = getConfig(); c.apiBase = apiBase.value.trim(); c.apiBase2 = apiBase2.value.trim(); c.apiModel = apiModel.value.trim(); c.apiModel2 = apiModel2.value.trim(); c.apiKey = apiKey.value.trim(); c.apiKey2 = apiKey2.value.trim(); c.simMode = simMode.checked; saveAll(); hideModal(settingsOverlay, settingsModal); }
   closeSettings.addEventListener('click', closeSet); settingsOverlay.addEventListener('click', closeSet);
@@ -140,7 +140,7 @@ function init() {
 }
 
 // 全局：对话参数即时保存（供设置面板inline handler调用）
-function saveParamCfg() { const c = getConfig(); if (tempSlider) c.temperature = parseFloat(tempSlider.value); if (topPSlider) c.topP = parseFloat(topPSlider.value); if (penSlider) c.penalty = parseFloat(penSlider.value); if (ctxRoundsInput) c.contextRounds = parseInt(ctxRoundsInput.value) || 10; if (slimitInput) c.summaryLimit = parseInt(slimitInput.value) || 50; saveAll(); }
+function saveParamCfg() { const c = getConfig(); if (ctxRoundsInput) c.contextRounds = parseInt(ctxRoundsInput.value) || 10; if (slimitInput) c.summaryLimit = parseInt(slimitInput.value) || 50; saveAll(); }
 
 function renderSumList() {
   const su = data.summaries || [];
@@ -208,8 +208,8 @@ if (worldBookBtn) {
   closeWorldBook.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   worldBookOverlay.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   if (closeHist) { closeHist.addEventListener('click', () => hideModal(histOverlay, histModal)); histOverlay.addEventListener('click', () => hideModal(histOverlay, histModal)); }
-  worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || parseWorldBookSections(defaultWorldBook())); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
-  resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = parseWorldBookSections(defaultWorldBook()); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
+  worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || WB_DEFAULT); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
+  resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = JSON.parse(JSON.stringify(WB_DEFAULT)); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
   if (addWbSectionBtn) addWbSectionBtn.addEventListener('click', () => {
     const name = prompt('请输入新章节标题：'); if (!name || !name.trim()) return;
     if (!confirm('确认新增章节「' + name.trim() + '」？')) return;

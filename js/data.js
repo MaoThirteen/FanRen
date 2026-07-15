@@ -84,7 +84,7 @@ function defaultState() {
     companions: [{ name:'王铁', realm:'炼气三层', gender:'男', species:'人类', sect:'无', sectTitle:'散修', relation:'好友', exp:45, expMax:calcExpMax('炼气三层'), hp:85, hpMax:200, mp:35, mpMax:100, artifacts:[{ name:'开山斧', grade:'凡器', desc:'势大力沉' }], skills:[{ name:'铁布衫', grade:'凡品功法', desc:'淬炼肉身' }], spiritStones:20, inventory:[], status:'同行身旁' }],
     tempCharacters: [] };
 }
-function defaultConfig() { return { apiBase:'', apiBase2:'', apiModel:'', apiModel2:'', apiKey:'', apiKey2:'', simMode:true, sidebarFold:{}, lastRaw:'', temperature:0.7, topP:0.5, penalty:1.0, contextRounds:10, summaryLimit:50, theme:'dark', shownGuide:false, bioLocked:{}, autoSummarize:false, autoSumEvery:50, autoSumRounds:10 }; }
+function defaultConfig() { return { apiBase:'', apiBase2:'', apiModel:'', apiModel2:'', apiKey:'', apiKey2:'', simMode:true, sidebarFold:{}, lastRaw:'', contextRounds:10, summaryLimit:50, theme:'dark', shownGuide:false, bioLocked:{}, autoSummarize:false, autoSumEvery:50, autoSumRounds:10 }; }
 
 /* 世界书：字符串→数组 解析 */
 function parseWorldBookSections(text) {

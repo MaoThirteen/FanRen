@@ -10,12 +10,12 @@ function buildPrompt(u) {
   const bioLocked = cfg.bioLocked || {};
   const bioLockNote = Object.keys(bioLocked).length ? '\n【角色生平锁状态】以下角色生平已锁定，只可读取不可修改：' + Object.keys(bioLocked).filter(k => bioLocked[k]).join('、') : '';
   const wbText = Array.isArray(data.worldBook) ? wbString(data.worldBook) : (data.worldBook || defaultWorldBook());
-  const fixed = '【最高优先级指令】遵循下方世界书的全部规则。\n\n' + wbText + bioLockNote + '\n\nTemperature: ' + cfg.temperature + ' | TopP: ' + cfg.topP + ' | 重复惩罚: ' + cfg.penalty;
+  const fixed = '【最高优先级指令】遵循下方世界书的全部规则。\n\n' + wbText + bioLockNote;
   const ctx = cfg.contextRounds || 10, slimit = cfg.summaryLimit || 50;
   const st = JSON.stringify(getState(), null, 2), ch = data.chatHistory || [], su = data.summaries || [];
   const rc = ch.slice(-ctx * 2); let rl = []; rc.forEach(m => { if (m.role === 'user') rl.push('玩家：' + m.content); else rl.push('AI：' + (m.content || '')); }); const rs = rl.length ? '\n\n【最近对话】\n' + rl.join('\n') : '';
   let sl = []; su.forEach(s => { if (s) sl.push('- ' + s); }); while (sl.length > slimit) { sl.shift(); data.summaries.shift(); } const ss = sl.length ? '\n\n【对话历史摘要】\n' + sl.join('\n') : '';
-  return fixed + '\n\n【当前角色状态数据】\n' + st + rs + ss + '\n\n【玩家指令】\n' + u;
+  return fixed + ss + '\n\n【当前角色状态数据】\n' + st + rs + '\n\n【玩家指令】\n' + u;
 }
 
 function genSim(s) {
@@ -121,7 +121,7 @@ async function sendMessage(u, isRegen) {
       const r = await fetch(base + '/chat/completions', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
-        body: JSON.stringify({ model, messages:[{ role:'user', content:buildPrompt(u) }], temperature:cfg.temperature || 0.7, top_p:cfg.topP || 0.5, frequency_penalty:cfg.penalty ? cfg.penalty - 1 : 0 })
+        body: JSON.stringify({ model, messages:[{ role:'user', content:buildPrompt(u) }] })
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json();
@@ -152,7 +152,7 @@ async function sendMessage(u, isRegen) {
             { role:'user', content:buildPrompt(u) },
             { role:'assistant', content:fullText.slice(-2000) },
             { role:'user', content:'你刚才的回复缺少末尾的status代码块。请立即只输出status代码块，包含protagonist、companions、tempCharacters、timeLocation、roundSummary全部字段，不要输出任何剧情或其他内容。' }
-          ], temperature:0.3 }) });
+          ] }) });
         if (r2.ok) {
           const j2 = await r2.json();
           const t2 = j2.choices?.[0]?.message?.content || '';
@@ -201,7 +201,7 @@ async function summarizeSummaries(rounds) {
     const r = await fetch(base + '/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
-      body: JSON.stringify({ model, messages:[{ role:'user', content:prompt }], temperature:0.3, max_tokens:8000, reasoning_effort:'disabled' })
+      body: JSON.stringify({ model, messages:[{ role:'user', content:prompt }], max_tokens:8000, reasoning_effort:'disabled' })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();

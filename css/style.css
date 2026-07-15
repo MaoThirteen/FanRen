@@ -57,7 +57,6 @@ html.light textarea,html.light input:not([type=range]):not([type=checkbox]):not(
 .api-section:hover{background:rgba(160,120,60,.08)}
 .api-section .api-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
 .api-section.open .api-body{max-height:320px}
-#paramSection.open .api-body{max-height:420px}
 .api-section.open .iap-expand{transform:rotate(90deg)}
 
 /* === 品阶标签 === */

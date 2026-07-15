@@ -38,8 +38,6 @@ const exportImportBtn = $('exportImportBtn'), exportImportOverlay = $('exportImp
 const doExportBtn = $('doExportBtn'), doImportBtn = $('doImportBtn'), importFileInput = $('importFileInput');
 const confirmOverlay = $('confirmOverlay'), confirmModal = $('confirmModal'), confirmTitle = $('confirmTitle'), confirmMsg = $('confirmMsg');
 const confirmOkBtn = $('confirmOkBtn'), confirmCancelBtn = $('confirmCancelBtn');
-const tempSlider = $('tempSlider'), topPSlider = $('topPSlider'), penSlider = $('penSlider');
-const tempVal = $('tempVal'), topPVal = $('topPVal'), penVal = $('penVal');
 const ctxRoundsInput = $('ctxRoundsInput'), slimitInput = $('slimitInput');
 const promptGearBtn = $('promptGearBtn'), promptPanel = $('promptPanel'), promptOverlay = $('promptOverlay'), promptContent = $('promptContent');
 const copyPromptBtn = $('copyPromptBtn'), closePromptBtn = $('closePromptBtn'), promptCharCount = $('promptCharCount');
@@ -306,7 +304,7 @@ function rebuildWorldBook(sections) { return sections.map(s => s.heading + '\n' 
 
 /* 世界书每节独立渲染 + 编辑功能 */
 let wbEditIdx = -1;
-function getWbArr() { return data.worldBook || parseWorldBookSections(defaultWorldBook()); }
+function getWbArr() { return data.worldBook || JSON.parse(JSON.stringify(WB_DEFAULT)); }
 
 function renderWorldBookSections(arr) {
   const sections = Array.isArray(arr) ? arr : parseWorldBookSections(arr);
