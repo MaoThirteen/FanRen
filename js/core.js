@@ -201,7 +201,7 @@ async function summarizeSummaries(rounds) {
     const r = await fetch(base + '/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
-      body: JSON.stringify({ model, messages:[{ role:'user', content:prompt }], max_tokens:8000, reasoning_effort:'disabled' })
+      body: JSON.stringify({ model, messages:[{ role:'user', content:prompt }], max_tokens:8000 })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
