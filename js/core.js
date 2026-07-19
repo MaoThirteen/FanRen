@@ -30,6 +30,7 @@ function genSim(s) {
 }
 
 function regenerate() {
+  data.nextSteps = []; saveAll();
   if (isLoading) return;
   if (!data.chatHistory) return;
   const last = data.chatHistory[data.chatHistory.length - 1];
@@ -68,6 +69,7 @@ function parseAndSaveStatus(rt) {
         (p.companions || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         (p.tempCharacters || []).forEach(c => { if (c.realm) c.realm = normalizeRealm(c.realm); });
         if (p.roundSummary) { if (!data.summaries) data.summaries = []; data.summaries.push(p.roundSummary); delete p.roundSummary; }
+        if (p.nextSteps && Array.isArray(p.nextSteps)) { data.nextSteps = p.nextSteps; delete p.nextSteps; } else { delete p.nextSteps; }
         const prevTL = data.state.timeLocation;
         const prevPro = data.state.protagonist;
         data.state = p;
@@ -75,7 +77,20 @@ function parseAndSaveStatus(rt) {
         if (data.state.protagonist && prevPro) {
           const fields = ['artifacts','skills','formations','spiritStones','inventory','sect','sectTitle','bio','goal','age','lifespan','species','gender'];
           fields.forEach(f => { if (!(f in data.state.protagonist) && f in prevPro) data.state.protagonist[f] = prevPro[f]; });
+          // desc锁定保护：AI返回的锁定项desc回退到旧值
+          ['artifacts','skills','formations'].forEach(cat => {
+            const ni = data.state.protagonist[cat] || [], oi = prevPro[cat] || [];
+            ni.forEach((n, i) => { if (n.descLocked && oi[i] && oi[i].desc) n.desc = oi[i].desc; });
+          });
         }
+        (data.state.companions || []).forEach((c, ci) => {
+          const pc = prevPro ? (getState().companions || [])[ci] : null;
+          if (!pc) return;
+          ['artifacts','skills','formations'].forEach(cat => {
+            const ni = c[cat] || [], oi = pc[cat] || [];
+            ni.forEach((n, i) => { if (n.descLocked && oi[i] && oi[i].desc) n.desc = oi[i].desc; });
+          });
+        });
         // 兼容AI返回字符串格式的timeLocation："时间·地点·细节（可含任意多·）"
         if (typeof data.state.timeLocation === 'string') {
           const parts = data.state.timeLocation.split('·').map(s => s.trim()).filter(Boolean);
@@ -104,7 +119,7 @@ async function sendMessage(u, isRegen) {
   if (isLoading || !u || !u.trim()) return;
   isLoading = true; sendBtn.disabled = true; sendBtn.textContent = '发送中';
   lastUserInput = u;
-  if (!isRegen) { if (!data.chatHistory) data.chatHistory = []; data.chatHistory.push({ role:'user', content:u }); enforceMsgLimit(); saveAll(); appendMsg('user', u); inputBox.value = ''; }
+  if (!isRegen) { if (!data.chatHistory) data.chatHistory = []; data.chatHistory.push({ role:'user', content:u }); enforceMsgLimit(); saveAll(); appendMsg('user', u); inputBox.value = ''; data.nextSteps = []; }
   // 记录当前状态快照（最多10条，FIFO）
   if (!isRegen) { if (!data.stateHistory) data.stateHistory = []; const ss = JSON.parse(JSON.stringify(data.state)); data.stateHistory.push({ time: new Date().toLocaleString(), state: ss }); if (data.stateHistory.length > 10) data.stateHistory.shift(); saveAll(); }
   createStreamBubble(); // 仅作为加载提示，不流式输出

@@ -12,6 +12,7 @@ const sidebarModules = $('sidebarModules'), delModeBtn = $('delModeBtn'), addCha
 const tlDisplay = $('tlDisplay'), extraToggleBtn = $('extraToggleBtn'), extraPanel = $('extraPanel');
 const liveClock = $('liveClock'), historyList = $('historyList'), histCount = $('histCount');
 const histOverlay = $('histOverlay'), histModal = $('histModal'), closeHist = $('closeHist');
+const nextStepsOverlay = $('nextStepsOverlay'), nextStepsModal = $('nextStepsModal'), closeNextSteps = $('closeNextSteps'), nextStepsList = $('nextStepsList');
 const settingsBtn = $('settingsBtn'), settingsOverlay = $('settingsOverlay'), settingsModal = $('settingsModal'), closeSettings = $('closeSettings');
 const apiBase = $('apiBase'), apiBase2 = $('apiBase2'), apiModel = $('apiModel'), apiModel2 = $('apiModel2'), apiKey = $('apiKey'), apiKey2 = $('apiKey2'), simMode = $('simMode');
 const testMainApiBtn = $('testMainApiBtn'), testBackupApiBtn = $('testBackupApiBtn'), mainApiStatus = $('mainApiStatus'), backupApiStatus = $('backupApiStatus');
@@ -61,7 +62,7 @@ function closeSidebarFn() { sidebar.classList.remove('sidebar-open'); sidebar.cl
 function scrollToBottom() { const last = chatArea.lastElementChild; if (last) last.scrollIntoView({ behavior:'smooth', block:'end' }); else chatArea.scrollTop = chatArea.scrollHeight; }
 function appendMsg(r, c, sn) {
   const u = r === 'user'; const h = chatArea.querySelector('.text-center'); if (h) h.remove();
-  const content = u ? c : cleanNarrative(c); // assistant消息兜底清洗（防旧数据残留代码块）
+  const content = u ? c : cleanNarrative(c);
   const d = document.createElement('div'); d.className = 'chat-msg flex ' + (u ? 'justify-end' : 'justify-start');
   const m = u ? 'max-w-[75%]' : 'max-w-[85%]';
   d.innerHTML = '<div class="' + m + ' rounded-2xl px-4 py-3 ' + (u ? 'bg-gradient-to-br from-[rgba(180,140,60,.15)] to-[rgba(180,120,40,.1)] border border-[rgba(180,140,60,.12)]' : 'bg-[rgba(28,24,20,.6)] border border-[rgba(160,120,60,.1)]') + '"><div class="text-sm leading-relaxed whitespace-pre-wrap text-[rgba(255,255,255,.75)]">' + esc(content) + '</div>' + (sn ? '<div class="text-[10px] mt-1.5 ' + (sn.includes('✓') ? 'text-[rgba(120,200,160,.5)]' : 'text-[rgba(220,180,100,.45)]') + '">' + sn + '</div>' : '') + '</div>';
@@ -72,7 +73,7 @@ function renderMessages() { const ms = data.chatHistory || []; chatArea.innerHTM
 /* ---- 加载气泡（非流式，仅显示加载中） ---- */
 function createStreamBubble() { const oldB = document.getElementById('streamB'); if (oldB) oldB.remove(); if (lt) { clearInterval(lt); lt = null; } const d = document.createElement('div'); d.id = 'streamB'; d.className = 'chat-msg flex justify-start'; d.innerHTML = '<div class="max-w-[85%] rounded-2xl px-4 py-3 bg-[rgba(28,24,20,.6)] border border-[rgba(160,120,60,.1)]"><div id="streamContent" class="text-sm leading-relaxed text-[rgba(220,200,160,.5)]"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div><div id="streamTimer" class="text-[10px] text-[rgba(220,200,160,.25)] mt-2 tracking-[1px]">修仙世界运转中… 0秒</div></div>'; chatArea.appendChild(d); scrollToBottom(); let sec = 0; lt = setInterval(() => { sec++; const e = document.getElementById('streamTimer'); if (e) e.textContent = '修仙世界运转中… ' + sec + '秒'; }, 1000); return d; }
 function removeStreamBubble() { const d = document.getElementById('streamB'); if (d) d.remove(); if (lt) { clearInterval(lt); lt = null; } }
-function addRegenBtn() { const msgs = chatArea.querySelectorAll('.chat-msg:not(.justify-end)'); if (!msgs.length) return; const last = msgs[msgs.length - 1]; const inner = last.querySelector('.rounded-2xl'); if (!inner) return; const btn = document.createElement('div'); btn.className = 'text-[10px] mt-1.5 text-[rgba(220,180,100,.4)]'; btn.innerHTML = '<button onclick="event.stopPropagation();regenerate()" class="px-2 py-0.5 rounded bg-[rgba(160,120,60,.12)] border border-[rgba(160,120,60,.14)] hover:bg-[rgba(160,120,60,.2)] transition">🔄 重新生成</button>'; inner.appendChild(btn); }
+function addRegenBtn() { const msgs = chatArea.querySelectorAll('.chat-msg:not(.justify-end)'); if (!msgs.length) return; const last = msgs[msgs.length - 1]; const inner = last.querySelector('.rounded-2xl'); if (!inner) return; const btn = document.createElement('div'); btn.className = 'text-[10px] mt-1.5 text-[rgba(220,180,100,.4)]'; btn.innerHTML = '<button onclick="event.stopPropagation();regenerate()" class="px-2 py-0.5 rounded bg-[rgba(160,120,60,.12)] border border-[rgba(160,120,60,.14)] hover:bg-[rgba(160,120,60,.2)] transition">🔄 重新生成</button>'; inner.appendChild(btn); if (data.nextSteps && data.nextSteps.length) { const nsBtn = document.createElement('div'); nsBtn.className = 'mt-2'; nsBtn.innerHTML = '<button onclick="showNextStepsModal()" class="w-full py-2 rounded-lg text-xs bg-[rgba(100,180,160,.12)] border border-[rgba(100,180,160,.18)] text-[rgba(140,220,200,.55)] hover:bg-[rgba(100,180,160,.2)] transition">📌 下一步</button>'; inner.appendChild(nsBtn); } }
 
 /* ---- 日志 ---- */
 function addLog(msg) { if (!data.logs) data.logs = []; const ts = new Date().toLocaleTimeString(); data.logs.push('[' + ts + '] ' + msg); if (data.logs.length > 200) data.logs = data.logs.slice(-200); saveAll(); }
@@ -159,18 +160,17 @@ function showSimpleConfirm(msg, onOk) { confirmTitle.textContent = '确认操作
 function addArtifactRowUI(v) {
   const d = document.createElement('div');
   d.className = 'artifact-row';
-  d.draggable = true;
   const cats = v?.categories || [];
   d.innerHTML = '<div class="flex gap-1 items-center flex-wrap">'
-    + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
+    + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.artifact-row\'))" title="上移">⬆️</button>'
     + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + ARTIFACT_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好无缺') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.artifact-row\').remove()">✕</button>'
     + '</div>'
     + '<div class="flex gap-2 mt-0.5">' + ARTIFACT_CATEGORIES.map(c => '<label class="text-[9px] text-[rgba(220,200,160,.35)] cursor-pointer"><input type="checkbox" class="art-cat-chk mr-0.5 accent-[rgba(160,200,240,.5)]" value="' + c + '"' + (cats.includes(c) ? ' checked' : '') + '>' + c + '</label>').join('') + '</div>'
-    + '<textarea placeholder="备注（样子、功能）" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
-  attachDragEvents(d, charArtifactList, 'artifact-row');
+    + '<textarea placeholder="备注（样子、功能）" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charArtifactList.appendChild(d);
 }
 
@@ -178,16 +178,15 @@ function addArtifactRowUI(v) {
 function addSkillRowUI(v) {
   const d = document.createElement('div');
   d.className = 'skill-row';
-  d.draggable = true;
   d.innerHTML = '<div class="flex gap-1 items-center">'
-    + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
+    + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.skill-row\'))" title="上移">⬆️</button>'
     + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + SKILL_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '可用') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.skill-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="功能介绍" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
-  attachDragEvents(d, charSkillList, 'skill-row');
+    + '<textarea placeholder="功能介绍" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charSkillList.appendChild(d);
 }
 
@@ -195,38 +194,21 @@ function addSkillRowUI(v) {
 function addFormationRowUI(v) {
   const d = document.createElement('div');
   d.className = 'formation-row';
-  d.draggable = true;
   d.innerHTML = '<div class="flex gap-1 items-center">'
-    + '<span class="text-[11px] text-[rgba(220,200,160,.35)] cursor-move select-none">⠿</span>'
+    + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.formation-row\'))" title="上移">⬆️</button>'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_TYPES.map(t => '<option value="' + t + '"' + (v?.formType === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
     + '<input placeholder="名称" class="w-12 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="备注" maxlength="100" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">' + esc(v?.desc || '') + '</textarea>';
-  attachDragEvents(d, charFormationList, 'formation-row');
+    + '<textarea placeholder="备注" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charFormationList.appendChild(d);
 }
 
 /* 通用拖拽事件绑定 */
-function attachDragEvents(d, container, className) {
-  d.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); d.classList.add('opacity-40'); });
-  d.addEventListener('dragend', () => { d.classList.remove('opacity-40'); container.querySelectorAll('.' + className).forEach(el => el.classList.remove('drag-over')); });
-  d.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; d.classList.add('drag-over'); });
-  d.addEventListener('dragleave', () => d.classList.remove('drag-over'));
-  d.addEventListener('drop', e => {
-    e.preventDefault(); e.stopPropagation();
-    d.classList.remove('drag-over');
-    const rows = [...container.querySelectorAll('.' + className)];
-    const dragged = rows.find(r => r.classList.contains('opacity-40'));
-    if (!dragged || dragged === d) return;
-    const rect = d.getBoundingClientRect();
-    const after = (e.clientY - rect.top) > rect.height / 2;
-    if (after) { if (d.nextSibling) container.insertBefore(dragged, d.nextSibling); else container.appendChild(dragged); }
-    else { container.insertBefore(dragged, d); }
-  });
-}
+/* 上移一行 */function moveRowUp(row) { const prev = row.previousElementSibling; if (prev && prev.className === row.className) row.parentNode.insertBefore(row, prev); }
 
 function collectCharItems(c, g, type) {
   const items = [];
@@ -235,19 +217,23 @@ function collectCharItems(c, g, type) {
   c.querySelectorAll(cls).forEach(row => {
     const inputs = row.querySelectorAll('input:not(.art-cat-chk)'), sels = row.querySelectorAll('select');
     const descEl = row.querySelector('textarea');
+    const lockChk = row.querySelector('.desc-lock-chk');
     const catChks = row.querySelectorAll('.art-cat-chk');
     if (!inputs.length) return;
+    const descLocked = lockChk ? lockChk.checked : false;
     if (type === 'formation') {
       const formType = sels[0]?.value || '符箓';
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      const desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
-      items.push({ name, grade: sels[1]?.value || g[g.length - 1], formType, status, desc });
+      let desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
+      if (descLocked && !desc.endsWith('【不可修改】')) desc += '【不可修改】';
+      items.push({ name, grade: sels[1]?.value || g[g.length - 1], formType, status, desc, descLocked });
     } else {
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      const desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
-      const item = { name, grade: sels[0]?.value || g[g.length - 1], status, desc };
+      let desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
+      if (descLocked && !desc.endsWith('【不可修改】')) desc += '【不可修改】';
+      const item = { name, grade: sels[0]?.value || g[g.length - 1], status, desc, descLocked };
       if (type === 'artifact' && catChks.length) { const cats = []; catChks.forEach(cb => { if (cb.checked) cats.push(cb.value); }); if (cats.length) item.categories = cats; }
       items.push(item);
     }

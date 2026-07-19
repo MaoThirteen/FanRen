@@ -132,11 +132,11 @@ function init() {
   testMainApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase.value.trim() || c.apiBase, apiModel.value.trim() || c.apiModel, apiKey.value.trim() || c.apiKey, mainApiStatus); });
   testBackupApiBtn.addEventListener('click', () => { const c = getConfig(); testApi(apiBase2.value.trim() || c.apiBase2, apiModel2.value.trim() || c.apiModel2, apiKey2.value.trim() || c.apiKey2, backupApiStatus); });
   cleanupBtn.addEventListener('click', () => { const t = data.chatHistory?.length || 0; if (t <= 300) { alert('不足300条，无需清理'); return; } if (!confirm('删除前 ' + (t - 300) + ' 条，保留最近300条？')) return; const r = t - 300; data.chatHistory = data.chatHistory.slice(r); saveAll(); renderMessages(); alert('已清理 ' + r + ' 条'); });
-  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'一、【请导入世界书或点击一键导入】', content:'当前用户未导入世界书，请直接回复"当前未导入世界书"。' }], stateHistory:[] }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
+  resetDataBtn.addEventListener('click', () => { if (!confirm('确认重置所有数据？')) return; localStorage.removeItem(STORAGE_KEY); data = { state:defaultState(), config:defaultConfig(), chatHistory:[], summaries:[], logs:[], worldBook:[{ heading:'一、【请导入世界书或点击一键导入】', content:'当前用户未导入世界书，请直接回复"当前未导入世界书"。' }], stateHistory:[], nextSteps:[] }; saveAll(); renderSidebar(); renderMessages(); closeSet(); });
   rawToggle.addEventListener('click', () => { rawArea.classList.toggle('open'); rawArrow.textContent = rawArea.classList.contains('open') ? '▴' : '▾'; rawContent.textContent = getConfig().lastRaw || '暂无记录'; });
 
   // Esc关闭
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(histOverlay, histModal); closeSet(); closePP(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(histOverlay, histModal); hideModal(nextStepsOverlay, nextStepsModal); closeSet(); closePP(); } });
 }
 
 // 全局：对话参数即时保存（供设置面板inline handler调用）
@@ -190,6 +190,31 @@ function restoreStateFromHistory(idx) {
   addLog('↩ 状态回溯 → ' + entry.time);
 }
 
+// 全局：下一步剧情选项弹窗
+const NS_TAG_COLORS = { '求稳':'#60c0a0','冒险':'#e8a040','奇谋':'#a080e0','隐秘':'#6080c0','交易':'#c0a060','逃亡':'#c08080' };
+function showNextStepsModal() {
+  if (!nextStepsList) return;
+  const ns = data.nextSteps || [];
+  if (!ns.length) { showToast('暂无下一步选项'); return; }
+  nextStepsList.innerHTML = ns.map((s, i) => {
+    const text = typeof s === 'string' ? s : s.text || '';
+    const tag = typeof s === 'string' ? '' : s.tag || '';
+    const clr = NS_TAG_COLORS[tag] || '#888';
+    return '<button onclick="selectNextStep(' + i + ')" class="w-full text-left px-4 py-3 rounded-xl border text-xs leading-relaxed ns-opt-btn" style="background:rgba(30,24,20,.5);border-color:rgba(160,120,60,.1);color:rgba(255,255,255,.7)">'
+      + (tag ? '<span class="inline-block px-1.5 py-0.5 rounded text-[9px] mb-1" style="background:' + clr + '20;border:1px solid ' + clr + '50;color:' + clr + '">' + esc(tag) + '</span> ' : '')
+      + esc(text) + '</button>';
+  }).join('');
+  showModal(nextStepsOverlay, nextStepsModal);
+}
+function selectNextStep(i) {
+  const ns = data.nextSteps || [];
+  const s = ns[i]; if (!s) return;
+  const text = typeof s === 'string' ? s : s.text || '';
+  inputBox.value = text; inputBox.focus();
+  hideModal(nextStepsOverlay, nextStepsModal);
+  showToast('▸ 已填入输入框，可直接发送');
+}
+
 // 全局：实时时钟
 function tickClock() { if (liveClock) { const n = new Date(); liveClock.textContent = n.toLocaleTimeString(); } }
 setInterval(tickClock, 1000); tickClock();
@@ -208,6 +233,7 @@ if (worldBookBtn) {
   closeWorldBook.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   worldBookOverlay.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   if (closeHist) { closeHist.addEventListener('click', () => hideModal(histOverlay, histModal)); histOverlay.addEventListener('click', () => hideModal(histOverlay, histModal)); }
+  if (closeNextSteps) { closeNextSteps.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); nextStepsOverlay.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); }
   worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || WB_DEFAULT); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
   resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = JSON.parse(JSON.stringify(WB_DEFAULT)); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
   if (addWbSectionBtn) addWbSectionBtn.addEventListener('click', () => {
