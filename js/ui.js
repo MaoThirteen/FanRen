@@ -169,7 +169,7 @@ function addArtifactRowUI(v) {
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.artifact-row\').remove()">✕</button>'
     + '</div>'
     + '<div class="flex gap-2 mt-0.5">' + ARTIFACT_CATEGORIES.map(c => '<label class="text-[9px] text-[rgba(220,200,160,.35)] cursor-pointer"><input type="checkbox" class="art-cat-chk mr-0.5 accent-[rgba(160,200,240,.5)]" value="' + c + '"' + (cats.includes(c) ? ' checked' : '') + '>' + c + '</label>').join('') + '</div>'
-    + '<textarea placeholder="备注（样子、功能）" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<textarea placeholder="备注（样子、功能）" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
     + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charArtifactList.appendChild(d);
 }
@@ -185,7 +185,7 @@ function addSkillRowUI(v) {
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '可用') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.skill-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="功能介绍" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<textarea placeholder="功能介绍" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
     + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charSkillList.appendChild(d);
 }
@@ -202,7 +202,7 @@ function addFormationRowUI(v) {
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
     + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="备注" maxlength="300" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
+    + '<textarea placeholder="备注" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
     + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
   charFormationList.appendChild(d);
 }
