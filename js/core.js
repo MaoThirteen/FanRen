@@ -136,7 +136,7 @@ async function sendMessage(u, isRegen) {
       const r = await fetch(base + '/chat/completions', {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
-        body: JSON.stringify({ model, messages:[{ role:'user', content:buildPrompt(u) }] })
+        body: JSON.stringify({ model, messages:[{ role:'user', content:buildPrompt(u) }], max_tokens:12000 })
       });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json();
@@ -167,7 +167,7 @@ async function sendMessage(u, isRegen) {
             { role:'user', content:buildPrompt(u) },
             { role:'assistant', content:fullText.slice(-2000) },
             { role:'user', content:'你刚才的回复缺少末尾的status代码块。请立即只输出status代码块，包含protagonist、companions、tempCharacters、timeLocation、roundSummary、nextSteps全部字段，不要输出任何剧情或其他内容。' }
-          ] }) });
+          ], max_tokens:8000 }) });
         if (r2.ok) {
           const j2 = await r2.json();
           const t2 = j2.choices?.[0]?.message?.content || '';
