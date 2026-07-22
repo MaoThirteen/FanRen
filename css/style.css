@@ -59,6 +59,10 @@ html.light textarea,html.light input:not([type=range]):not([type=checkbox]):not(
 .api-section.open .api-body{max-height:320px}
 .api-section.open .iap-expand{transform:rotate(90deg)}
 
+/* === 编辑列表项分隔 === */
+.artifact-row,.skill-row,.formation-row{padding:6px !important;margin-bottom:6px !important;border:1.5px solid rgba(200,170,60,.2) !important;border-radius:6px;background:rgba(18,16,12,.3)}
+.artifact-row:last-child,.skill-row:last-child,.formation-row:last-child{margin-bottom:0 !important}
+
 /* === 下一步选项 === */
 .ns-opt-btn:hover{border-color:rgba(180,140,60,.25)!important;background:rgba(40,34,28,.6)!important}
 
