@@ -103,7 +103,7 @@ function init() {
     const roundsEl = document.getElementById('summaryRounds');
     const rounds = roundsEl ? parseInt(roundsEl.value) || all.length : all.length;
     const su = rounds > 0 && rounds < all.length ? all.slice(0, rounds) : all;
-    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，输出字数1200字以内，尽可能压缩。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
+    const prompt = '你是修仙小说剧情整理助手。将任意数量的对话摘要压缩为一段极简总结。\n\n【禁止事项】\n- 严禁输出任何思考过程、分析步骤、筛选逻辑或"首先""根据规则""列出关键事件"等引导语。只输出最终总结正文本身。\n\n【硬性限制】\n- 不管输入多少轮，尽可能压缩但不设硬性字数上限。\n- 禁止逐段概括，必须合并同类事件。早期剧情压缩为1-3句背景交代，只详写最近3-5个关键转折。\n\n【筛选规则】\n- 只保留产生后续后果的事件：修为大境界突破、获得/失去重要法宝、关键人物死亡或离开、阵营转换、重伤/逃生类转折。\n- 小境界突破、常规战斗过程、日常修炼、灵石消耗、次要物品获取一律舍弃或合并为"历经N年苦修"式短语。\n- 同一法宝的多次使用只提最关键的一次。\n\n【压缩技巧】\n- 连续多年的修炼/战斗用一句话打包："此后十年，他迂回黑市与宗门间积累资源，修为至筑基圆满。"\n- 次要角色批量处理："与王铁、孙默等人先后探遗址、斩同门、夺三焰扇。"\n- 地点转移省略过程，只留结果："经传送阵逃至乱星海。"\n\n【输出格式】\n直接输出第三人称叙事正文，不加任何标记。主角名"猫十三"。结尾落于最新悬念。\n\n以下为待总结的摘要：\n\n' + su.join('\n');
     summaryPromptContent.textContent = prompt;
     summaryPromptArea.classList.toggle('hidden');
     summaryPromptBtn.textContent = summaryPromptArea.classList.contains('hidden') ? '提示词' : '隐藏';
@@ -145,7 +145,15 @@ function saveParamCfg() { const c = getConfig(); if (ctxRoundsInput) c.contextRo
 function renderSumList() {
   const su = data.summaries || [];
   if (!su.length) { summaryList.innerHTML = '<div class="text-xs text-[rgba(180,180,220,.15)] text-center py-8">暂无摘要</div>'; return; }
-  summaryList.innerHTML = su.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><div class="shrink-0 text-center"><div class="text-[11px] text-[rgba(180,180,220,.3)]">#' + (i + 1) + '</div><div class="text-[8px] text-[rgba(180,180,220,.15)]">' + (s.length || 0) + '字</div></div><span class="text-xs text-[rgba(200,200,230,.5)] flex-1">' + esc(s) + '</span>' + (summaryDeleteMode ? '<input type="checkbox" class="sumChk shrink-0 mt-0.5 accent-[rgba(200,80,80,.4)]" data-idx="' + i + '">' : '') + '</div>').join('');
+  summaryList.innerHTML = su.map((s, i) => '<div class="flex items-start gap-2 rounded-xl px-4 py-3 bg-[rgba(15,15,35,.25)] border border-[rgba(100,90,180,.05)]"><div class="shrink-0 text-center"><div class="text-[11px] text-[rgba(180,180,220,.3)]">#' + (i + 1) + '</div><div class="text-[8px] text-[rgba(180,180,220,.15)]">' + (s.length || 0) + '字</div></div><span class="sum-text text-xs text-[rgba(200,200,230,.5)] flex-1 cursor-pointer hover:text-[rgba(200,200,230,.7)] transition" onclick="editSummary(' + i + ')">' + esc(s) + '</span>' + (summaryDeleteMode ? '<input type="checkbox" class="sumChk shrink-0 mt-0.5 accent-[rgba(200,80,80,.4)]" data-idx="' + i + '">' : '') + '</div>').join('');
+}
+
+// 全局：编辑摘要
+function editSummary(i) {
+  if (!data.summaries || !data.summaries[i]) return;
+  const old = data.summaries[i];
+  const txt = prompt('编辑摘要 #' + (i + 1) + '（' + old.length + '字）：', old);
+  if (txt !== null && txt.trim()) { data.summaries[i] = txt.trim(); saveAll(); renderSumList(); showToast('✓ 摘要已更新'); }
 }
 
 // 全局：打开历史状态弹窗
