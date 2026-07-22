@@ -13,6 +13,9 @@ const tlDisplay = $('tlDisplay'), extraToggleBtn = $('extraToggleBtn'), extraPan
 const liveClock = $('liveClock'), historyList = $('historyList'), histCount = $('histCount');
 const histOverlay = $('histOverlay'), histModal = $('histModal'), closeHist = $('closeHist');
 const nextStepsOverlay = $('nextStepsOverlay'), nextStepsModal = $('nextStepsModal'), closeNextSteps = $('closeNextSteps'), nextStepsList = $('nextStepsList');
+const descEditOverlay = $('descEditOverlay'), descEditModal = $('descEditModal'), closeDescEdit = $('closeDescEdit');
+const saveDescEdit = $('saveDescEdit'), cancelDescEdit = $('cancelDescEdit'), descEditTextarea = $('descEditTextarea'), descEditTitle = $('descEditTitle');
+let descEditTarget = null; // 当前编辑的介绍按钮元素
 const settingsBtn = $('settingsBtn'), settingsOverlay = $('settingsOverlay'), settingsModal = $('settingsModal'), closeSettings = $('closeSettings');
 const apiBase = $('apiBase'), apiBase2 = $('apiBase2'), apiModel = $('apiModel'), apiModel2 = $('apiModel2'), apiKey = $('apiKey'), apiKey2 = $('apiKey2'), simMode = $('simMode');
 const testMainApiBtn = $('testMainApiBtn'), testBackupApiBtn = $('testBackupApiBtn'), mainApiStatus = $('mainApiStatus'), backupApiStatus = $('backupApiStatus');
@@ -156,54 +159,49 @@ function closeConfirm() { if (confirmTimer) { clearInterval(confirmTimer); confi
 function showSimpleConfirm(msg, onOk) { confirmTitle.textContent = '确认操作'; confirmMsg.textContent = msg; confirmOkBtn.disabled = false; confirmOkBtn.textContent = '确认'; confirmCancelBtn.textContent = '取消'; showModal(confirmOverlay, confirmModal); confirmOkBtn.onclick = function() { closeConfirm(); if (onOk) onOk(); }; confirmCancelBtn.onclick = closeConfirm; }
 
 /* ---- 角色编辑 ---- */
-/* 法器行：支持拖拽排序 + 名称/品阶/状态/类别 第一行，备注第二行 */
-function addArtifactRowUI(v) {
-  const d = document.createElement('div');
-  d.className = 'artifact-row';
+/* 法器行 */function addArtifactRowUI(v) {
+  const d = document.createElement('div'); d.className = 'artifact-row';
   const cats = v?.categories || [];
+  const descPreview = (v?.desc || '').length > 30 ? (v?.desc || '').slice(0, 30) + '…' : (v?.desc || '点击填写介绍');
+  d.id = 'arow_' + Math.random().toString(36).slice(2, 8);
   d.innerHTML = '<div class="flex gap-1 items-center flex-wrap">'
     + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.artifact-row\'))" title="上移">⬆️</button>'
     + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + ARTIFACT_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好无缺') + '">'
-    + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.artifact-row\').remove()">✕</button>'
     + '</div>'
     + '<div class="flex gap-2 mt-0.5">' + ARTIFACT_CATEGORIES.map(c => '<label class="text-[9px] text-[rgba(220,200,160,.35)] cursor-pointer"><input type="checkbox" class="art-cat-chk mr-0.5 accent-[rgba(160,200,240,.5)]" value="' + c + '"' + (cats.includes(c) ? ' checked' : '') + '>' + c + '</label>').join('') + '</div>'
-    + '<textarea placeholder="备注（样子、功能）" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
-    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
+    + '<div class="desc-preview-btn mt-1 w-full rounded px-2 py-1.5 text-[10px] bg-[rgba(30,24,18,.5)] border border-[rgba(160,120,60,.10)] text-[rgba(220,200,160,.35)] cursor-pointer hover:border-[rgba(160,120,60,.2)] hover:text-[rgba(220,200,160,.55)] transition truncate" data-desc="' + escAttr(v?.desc || '') + '" data-locked="' + (v?.descLocked ? '1' : '0') + '">📝 ' + esc(descPreview) + '</div>'
+    + '<div class="flex items-center justify-between mt-0.5"><label class="flex items-center gap-1 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定</label><button class="text-[rgba(200,100,60,.4)] hover:text-[rgba(200,100,60,.7)] transition text-[10px]" onclick="if(confirm(\'确认删除此条目？\'))this.closest(\'.artifact-row\').remove()">✕ 删除</button></div>';
   charArtifactList.appendChild(d);
 }
 
-/* 功法行：支持拖拽排序 + 名称/品阶/状态 第一行，备注第二行 */
-function addSkillRowUI(v) {
-  const d = document.createElement('div');
-  d.className = 'skill-row';
+/* 功法行 */function addSkillRowUI(v) {
+  const d = document.createElement('div'); d.className = 'skill-row';
+  const descPreview = (v?.desc || '').length > 30 ? (v?.desc || '').slice(0, 30) + '…' : (v?.desc || '点击填写介绍');
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.skill-row\'))" title="上移">⬆️</button>'
     + '<input placeholder="名称" class="w-14 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + SKILL_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '可用') + '">'
-    + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.skill-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="功能介绍" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
-    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
+    + '<div class="desc-preview-btn mt-1 w-full rounded px-2 py-1.5 text-[10px] bg-[rgba(30,24,18,.5)] border border-[rgba(160,120,60,.10)] text-[rgba(220,200,160,.35)] cursor-pointer hover:border-[rgba(160,120,60,.2)] hover:text-[rgba(220,200,160,.55)] transition truncate" data-desc="' + escAttr(v?.desc || '') + '" data-locked="' + (v?.descLocked ? '1' : '0') + '">📝 ' + esc(descPreview) + '</div>'
+    + '<div class="flex items-center justify-between mt-0.5"><label class="flex items-center gap-1 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定</label><button class="text-[rgba(200,100,60,.4)] hover:text-[rgba(200,100,60,.7)] transition text-[10px]" onclick="if(confirm(\'确认删除此条目？\'))this.closest(\'.skill-row\').remove()">✕ 删除</button></div>';
   charSkillList.appendChild(d);
 }
 
-/* 符箓/灵兽/阵盘行：支持拖拽排序 + 类型/名称/品阶/状态 第一行，备注第二行 */
-function addFormationRowUI(v) {
-  const d = document.createElement('div');
-  d.className = 'formation-row';
+/* 符箓/灵兽/阵盘行 */function addFormationRowUI(v) {
+  const d = document.createElement('div'); d.className = 'formation-row';
+  const descPreview = (v?.desc || '').length > 30 ? (v?.desc || '').slice(0, 30) + '…' : (v?.desc || '点击填写介绍');
   d.innerHTML = '<div class="flex gap-1 items-center">'
     + '<button class="text-[11px] text-[rgba(220,200,160,.35)] hover:text-[rgba(220,200,160,.7)] transition shrink-0" onclick="moveRowUp(this.closest(\'.formation-row\'))" title="上移">⬆️</button>'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_TYPES.map(t => '<option value="' + t + '"' + (v?.formType === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>'
     + '<input placeholder="名称" class="w-12 min-w-0 flex-1 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.name || '') + '">'
     + '<select class="rounded px-1 py-1 text-[10px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none">' + FORMATION_GRADES.map(g => '<option value="' + g + '"' + (v?.grade === g ? ' selected' : '') + '>' + g + '</option>').join('') + '</select>'
     + '<input placeholder="状态" class="w-16 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none" value="' + esc(v?.status || '完好') + '">'
-    + '<button class="text-[rgba(200,100,60,.5)] hover:text-[rgba(200,100,60,.8)] transition text-xs shrink-0" onclick="this.closest(\'.formation-row\').remove()">✕</button>'
     + '</div>'
-    + '<textarea placeholder="备注" maxlength="500" rows="2" class="w-full mt-0.5 rounded px-1.5 py-1 text-[11px] bg-[rgba(30,24,18,.6)] border border-[rgba(160,120,60,.16)] text-[#f0e8d8] outline-none resize-y" oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'"' + (v?.descLocked ? ' readonly style="opacity:.5"' : '') + '>' + esc((v?.desc || '').replace(/【不可修改】$/g, '')) + '</textarea>'
-    + '<label class="flex items-center gap-1 mt-0.5 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定介绍</label>';
+    + '<div class="desc-preview-btn mt-1 w-full rounded px-2 py-1.5 text-[10px] bg-[rgba(30,24,18,.5)] border border-[rgba(160,120,60,.10)] text-[rgba(220,200,160,.35)] cursor-pointer hover:border-[rgba(160,120,60,.2)] hover:text-[rgba(220,200,160,.55)] transition truncate" data-desc="' + escAttr(v?.desc || '') + '" data-locked="' + (v?.descLocked ? '1' : '0') + '">📝 ' + esc(descPreview) + '</div>'
+    + '<div class="flex items-center justify-between mt-0.5"><label class="flex items-center gap-1 text-[9px] cursor-pointer" style="color:' + (v?.descLocked ? '#e8c860' : 'rgba(220,200,160,.25)') + '"><input type="checkbox" class="desc-lock-chk mr-0.5 accent-[rgba(220,180,100,.5)]"' + (v?.descLocked ? ' checked' : '') + '>🔒 锁定</label><button class="text-[rgba(200,100,60,.4)] hover:text-[rgba(200,100,60,.7)] transition text-[10px]" onclick="if(confirm(\'确认删除此条目？\'))this.closest(\'.formation-row\').remove()">✕ 删除</button></div>';
   charFormationList.appendChild(d);
 }
 
@@ -216,7 +214,7 @@ function collectCharItems(c, g, type) {
   const defStatus = type === 'artifact' ? '完好无缺' : (type === 'formation' ? '完好' : '可用');
   c.querySelectorAll(cls).forEach(row => {
     const inputs = row.querySelectorAll('input:not(.art-cat-chk)'), sels = row.querySelectorAll('select');
-    const descEl = row.querySelector('textarea');
+    const descBtn = row.querySelector('.desc-preview-btn');
     const lockChk = row.querySelector('.desc-lock-chk');
     const catChks = row.querySelectorAll('.art-cat-chk');
     if (!inputs.length) return;
@@ -225,13 +223,13 @@ function collectCharItems(c, g, type) {
       const formType = sels[0]?.value || '符箓';
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      let desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
+      let desc = descBtn ? (descBtn.getAttribute('data-desc') || '').trim() || '功能未知' : '功能未知';
       if (descLocked && !desc.endsWith('【不可修改】')) desc += '【不可修改】';
       items.push({ name, grade: sels[1]?.value || g[g.length - 1], formType, status, desc, descLocked });
     } else {
       const name = inputs[0]?.value.trim(); if (!name) return;
       const status = inputs[1]?.value.trim() || defStatus;
-      let desc = descEl ? descEl.value.trim() || '功能未知' : '功能未知';
+      let desc = descBtn ? (descBtn.getAttribute('data-desc') || '').trim() || '功能未知' : '功能未知';
       if (descLocked && !desc.endsWith('【不可修改】')) desc += '【不可修改】';
       const item = { name, grade: sels[0]?.value || g[g.length - 1], status, desc, descLocked };
       if (type === 'artifact' && catChks.length) { const cats = []; catChks.forEach(cb => { if (cb.checked) cats.push(cb.value); }); if (cats.length) item.categories = cats; }
@@ -271,9 +269,6 @@ function openEditModal(type, idx) {
   const ac = c.artifacts?.length || 0, sc = c.skills?.length || 0, fc = c.formations?.length || 0;
   const aCount = document.getElementById('artifactEditCount'), sCount = document.getElementById('skillEditCount'), fCount = document.getElementById('formationEditCount');
   if (aCount) aCount.textContent = '（' + ac + '）'; if (sCount) sCount.textContent = '（' + sc + '）'; if (fCount) fCount.textContent = '（' + fc + '）';
-  if (ac) { const ab = document.getElementById('artifactEditBody'); if (ab) ab.classList.remove('hidden'); }
-  if (sc) { const sb = document.getElementById('skillEditBody'); if (sb) sb.classList.remove('hidden'); }
-  if (fc) { const fb = document.getElementById('formationEditBody'); if (fb) fb.classList.remove('hidden'); }
   if (charGoal) { charGoal.value = c.goal || ''; charGoal.style.display = (type === 'protagonist') ? '' : 'none'; }
   if (editGoalLabel) editGoalLabel.style.display = (type === 'protagonist') ? '' : 'none';
   charRealmSelect.onchange = function() { const rd = getRealmDefaults(this.value); const em = rd.expMax; if (charExpVal) charExpVal.setAttribute('data-expmax', em); if (charExpPct) charExpPct.setAttribute('data-expmax', em); if (charExpMaxLabel) charExpMaxLabel.textContent = em; if (charStoneInput) { charStoneInput.setAttribute('data-expmax', em); charStoneInput.setAttribute('data-hpmax', rd.hpMax); charStoneInput.setAttribute('data-mpmax', rd.mpMax); } updateExpBar(); };

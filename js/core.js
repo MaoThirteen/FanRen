@@ -166,7 +166,7 @@ async function sendMessage(u, isRegen) {
           body: JSON.stringify({ model, messages:[
             { role:'user', content:buildPrompt(u) },
             { role:'assistant', content:fullText.slice(-2000) },
-            { role:'user', content:'你刚才的回复缺少末尾的status代码块。请立即只输出status代码块，包含protagonist、companions、tempCharacters、timeLocation、roundSummary全部字段，不要输出任何剧情或其他内容。' }
+            { role:'user', content:'你刚才的回复缺少末尾的status代码块。请立即只输出status代码块，包含protagonist、companions、tempCharacters、timeLocation、roundSummary、nextSteps全部字段，不要输出任何剧情或其他内容。' }
           ] }) });
         if (r2.ok) {
           const j2 = await r2.json();

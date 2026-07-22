@@ -136,7 +136,7 @@ function init() {
   rawToggle.addEventListener('click', () => { rawArea.classList.toggle('open'); rawArrow.textContent = rawArea.classList.contains('open') ? '▴' : '▾'; rawContent.textContent = getConfig().lastRaw || '暂无记录'; });
 
   // Esc关闭
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(histOverlay, histModal); hideModal(nextStepsOverlay, nextStepsModal); closeSet(); closePP(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCE(); closeConfirm(); closeSum(); closeEI(); hideModal(logOverlay, logModal); hideModal(histOverlay, histModal); hideModal(nextStepsOverlay, nextStepsModal); hideModal(descEditOverlay, descEditModal); closeSet(); closePP(); } });
 }
 
 // 全局：对话参数即时保存（供设置面板inline handler调用）
@@ -232,8 +232,6 @@ if (worldBookBtn) {
   worldBookBtn.addEventListener('click', () => { refreshWbView(); showModal(worldBookOverlay, worldBookModal); });
   closeWorldBook.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
   worldBookOverlay.addEventListener('click', () => hideModal(worldBookOverlay, worldBookModal));
-  if (closeHist) { closeHist.addEventListener('click', () => hideModal(histOverlay, histModal)); histOverlay.addEventListener('click', () => hideModal(histOverlay, histModal)); }
-  if (closeNextSteps) { closeNextSteps.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); nextStepsOverlay.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); }
   worldBookCopyBtn.addEventListener('click', () => { const txt = wbString(data.worldBook || WB_DEFAULT); navigator.clipboard.writeText(txt).then(() => { worldBookCopyBtn.textContent = '✓ 已复制'; setTimeout(() => worldBookCopyBtn.textContent = '📋 复制', 1500); }); });
   resetWorldBookBtn.addEventListener('click', () => { showSimpleConfirm('恢复为默认世界书？', () => { data.worldBook = JSON.parse(JSON.stringify(WB_DEFAULT)); saveAll(); refreshWbView(); showToast('世界书已重置'); }); });
   if (addWbSectionBtn) addWbSectionBtn.addEventListener('click', () => {
@@ -249,5 +247,12 @@ if (worldBookBtn) {
     });
   });
 }
+
+// 历史/下一步/介绍 弹窗（全局）
+if (closeHist) { closeHist.addEventListener('click', () => hideModal(histOverlay, histModal)); histOverlay.addEventListener('click', () => hideModal(histOverlay, histModal)); }
+if (closeNextSteps) { closeNextSteps.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); nextStepsOverlay.addEventListener('click', () => hideModal(nextStepsOverlay, nextStepsModal)); }
+if (closeDescEdit) { closeDescEdit.addEventListener('click', () => hideModal(descEditOverlay, descEditModal)); descEditOverlay.addEventListener('click', () => hideModal(descEditOverlay, descEditModal)); if (cancelDescEdit) cancelDescEdit.addEventListener('click', () => hideModal(descEditOverlay, descEditModal)); }
+if (saveDescEdit) saveDescEdit.addEventListener('click', () => { if (descEditTarget && descEditTextarea) { descEditTarget.setAttribute('data-desc', descEditTextarea.value); const locked = descEditTarget.getAttribute('data-locked') === '1'; const preview = descEditTextarea.value.length > 30 ? descEditTextarea.value.slice(0, 30) + '…' : (descEditTextarea.value || '点击填写介绍'); descEditTarget.textContent = '📝 ' + preview.replace(/【不可修改】/g, ''); } hideModal(descEditOverlay, descEditModal); });
+document.addEventListener('click', e => { const btn = e.target.closest('.desc-preview-btn'); if (btn) { descEditTarget = btn; if (descEditTextarea) descEditTextarea.value = btn.getAttribute('data-desc') || ''; if (descEditTitle) descEditTitle.textContent = btn.getAttribute('data-locked') === '1' ? '📖 查看介绍（已锁定）' : '✏️ 编辑介绍'; if (descEditTextarea) descEditTextarea.readOnly = btn.getAttribute('data-locked') === '1'; showModal(descEditOverlay, descEditModal); } });
 
 init();

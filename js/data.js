@@ -103,6 +103,7 @@ function defaultWorldBook() { return '一、【回复格式及叙事风格】\n1
 
 /* ---- 通用工具 ---- */
 function esc(s) { return (typeof s !== 'string' ? '' : s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')); }
+function escAttr(s) { return esc(s).replace(/"/g,'&quot;'); }
 let toastTimer;
 function showToast(m) {
   const e = document.getElementById('toast') || (function() { const d = document.createElement('div'); d.id = 'toast'; d.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] px-5 py-2.5 rounded-xl bg-[rgba(25,28,60,.94)] border border-[rgba(100,90,180,.16)] text-sm text-[#c0c0e0] tracking-wider opacity-0 transition-all duration-400 pointer-events-none backdrop-blur'; document.body.appendChild(d); return d; })();
